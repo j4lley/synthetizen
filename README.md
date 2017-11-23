@@ -13,8 +13,8 @@ This README explains the needed steps to get synthetizen up and running in Windo
   Basically, you will need CMake, vcpkg and Qt5
 
 + Summary of set up:
-    * Install [vcpkg](https://github.com/Microsoft/vcpkg/) and Visual Studio 2013 Community Edition [here](https://www.visualstudio.com/en/vs/older-downloads/). We do not reccomend using 2017 yet.
-	* Install NVidia CUDA Toolkit (> 7.5 recommended)
+    * Install [vcpkg](https://github.com/Microsoft/vcpkg/) and Visual Studio Community Edition [here](https://www.visualstudio.com/en/vs/).
+	* Install NVidia CUDA Toolkit (>= 8.0 recommended)
     * Install [CMake](https://cmake.org/download/) (latest version should work)
     * Download and install [Qt-5.9](http://download.qt.io/official_releases/online_installers/qt-unified-windows-x86-online.exe):
 	* Set Qt ``bin`` directory in your PATH enviroment variable, this will make CMake to find all Qt-related stuff automatically.
