@@ -19,6 +19,7 @@ This README explains the needed steps to get synthetizen up and running in Windo
     * Download and install [Qt-5.9](http://download.qt.io/official_releases/online_installers/qt-unified-windows-x86-online.exe):
 	*  It should be only necessary to install you VS201X binaries and optionally the sources.
 	* Set Qt ``bin`` directory in your PATH enviroment variable, this will make CMake to find all Qt-related stuff automatically.
+    * Create a VCPKG_PATH variable and point it to your vcpkg installation folder where vcpkg package folder resides, something like e.g. "C:/foo/bar/vcpkg"
     * Configure with CMake-GUI. Click configure, then generate solution.
     * Remember to set up your CUDA build customizations in Visual Studio to control compute capability and CUDA code generation
   
