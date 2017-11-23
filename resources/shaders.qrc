@@ -1,0 +1,6 @@
+<RCC>
+<qresource  prefix="/shaders">
+    <file alias="default.vp">shaders/default.vp</file>
+	<file alias="default.fp">shaders/default.fp</file>
+</qresource>
+</RCC>
