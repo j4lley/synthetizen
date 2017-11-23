@@ -7,7 +7,8 @@
 
 GET_FILENAME_COMPONENT(module_file_path ${CMAKE_CURRENT_LIST_FILE} PATH )
 
-SET(VCPKG_PATH "D:/workspace/software/thirdparty/vcpkg")
+# Remember to set your environment VCPKG_PATH variable
+SET(VCPKG_PATH $ENV{VCPKG_PATH})
 
 IF( CMAKE_CL_64 )
   SET( LIB "lib64" )
