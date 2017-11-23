@@ -9,7 +9,7 @@ This README explains the needed steps to get synthetizen up and running in Windo
 
 ### How do I get set up? ###
 
-+ Dependencies. 3xposure render has been tested under Windows 8.1 and Windows 10 in 32bit.
++ Dependencies. synthetizen has been tested under Windows 10 in 64bit.
   Basically, you will need CMake, vcpkg and Qt5
 
 + Summary of set up:
