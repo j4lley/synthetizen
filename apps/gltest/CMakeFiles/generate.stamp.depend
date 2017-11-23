@@ -1,0 +1,35 @@
+# CMake generation dependency list for this directory.
+D:/workspace/adas/github/synthetizen/apps/gltest/CMakeLists.txt
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Core/Qt5CoreConfigVersion.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Core/Qt5CoreConfig.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Core/Qt5CoreConfigExtras.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Core/Qt5CoreConfigExtrasMkspecDir.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Core/Qt5CoreMacros.cmake
+C:/Program Files/CMake/share/cmake-3.10/Modules/CMakeParseArguments.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Widgets/Qt5WidgetsConfigVersion.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Widgets/Qt5WidgetsConfig.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Gui/Qt5GuiConfigVersion.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Gui/Qt5GuiConfig.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Gui/Qt5Gui_QGifPlugin.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Gui/Qt5Gui_QICNSPlugin.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Gui/Qt5Gui_QICOPlugin.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Gui/Qt5Gui_QJpegPlugin.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Gui/Qt5Gui_QMinimalIntegrationPlugin.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Gui/Qt5Gui_QOffscreenIntegrationPlugin.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Gui/Qt5Gui_QTgaPlugin.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Gui/Qt5Gui_QTiffPlugin.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Gui/Qt5Gui_QTuioTouchPlugin.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Gui/Qt5Gui_QWbmpPlugin.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Gui/Qt5Gui_QWebpPlugin.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Gui/Qt5Gui_QWindowsDirect2DIntegrationPlugin.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Gui/Qt5Gui_QWindowsIntegrationPlugin.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Gui/Qt5GuiConfigExtras.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Widgets/Qt5WidgetsConfigExtras.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5Widgets/Qt5WidgetsMacros.cmake
+C:/Program Files/CMake/share/cmake-3.10/Modules/CMakeParseArguments.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5OpenGL/Qt5OpenGLConfigVersion.cmake
+D:/workspace/software/thirdparty/qt/5.9/5.9.3/msvc2017_64/lib/cmake/Qt5OpenGL/Qt5OpenGLConfig.cmake
+C:/Program Files/CMake/share/cmake-3.10/Modules/FindOpenGL.cmake
+C:/Program Files/CMake/share/cmake-3.10/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files/CMake/share/cmake-3.10/Modules/FindPackageMessage.cmake
+C:/Program Files/CMake/share/cmake-3.10/Modules/AutogenInfo.cmake.in
