@@ -95,38 +95,22 @@ int main(int argc, char **argv)
 	window.show();
 
 	window.setAnimating(true);
-	
+/*	
 	FREE_IMAGE_FORMAT formato = FreeImage_GetFileType("image.jpg", 0);//Automatocally detects the format(from over 20 formats!)
 	FIBITMAP* imagen = FreeImage_Load(formato, "image.jpg");
 
 	FIBITMAP* temp = imagen;
 	imagen = FreeImage_ConvertTo32Bits(imagen);
 	FreeImage_Unload(temp);
-	
+*/	
 	return app.exec();
 }
-
-static const char *vertexShaderSource =
-"attribute highp vec4 posAttr;\n"
-"attribute lowp vec4 colAttr;\n"
-"varying lowp vec4 col;\n"
-"uniform highp mat4 matrix;\n"
-"void main() {\n"
-"   col = colAttr;\n"
-"   gl_Position = matrix * posAttr;\n"
-"}\n";
-
-static const char *fragmentShaderSource =
-"varying lowp vec4 col;\n"
-"void main() {\n"
-"   gl_FragColor = col;\n"
-"}\n";
 
 void TriangleWindow::initialize()
 {
 	m_program = new QOpenGLShaderProgram(this);
-	m_program->addShaderFromSourceCode(QOpenGLShader::Vertex, vertexShaderSource);
-	m_program->addShaderFromSourceCode(QOpenGLShader::Fragment, fragmentShaderSource);
+	m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/default.vp");
+	m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/default.fp");
 	m_program->link();
 	m_posAttr = m_program->attributeLocation("posAttr");
 	m_colAttr = m_program->attributeLocation("colAttr");
