@@ -11,5 +11,5 @@ set(CMAKE_AUTOMOC ON)
 # Module Path
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake_modules")	
 
-##add_subdirectory (src)
+add_subdirectory (src)
 add_subdirectory (apps)

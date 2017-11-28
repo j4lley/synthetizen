@@ -48,7 +48,7 @@
  **
  ****************************************************************************/
 
-#include "openglwindow.h"
+#include <graphics/openglwindow.h>
 
 #include <QtGui/QGuiApplication>
 #include <QtGui/QMatrix4x4>

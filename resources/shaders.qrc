@@ -2,5 +2,6 @@
 <qresource  prefix="/shaders">
     <file alias="default.vp">shaders/default.vp</file>
 	<file alias="default.fp">shaders/default.fp</file>
+	<file alias="texture.fp">shaders/texture.fp</file>
 </qresource>
 </RCC>

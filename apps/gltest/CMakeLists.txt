@@ -1,6 +1,7 @@
 
 # Find the QtWidgets library
 find_package(Qt5Core)
+find_package(Qt5Gui)
 find_package(Qt5Widgets)
 find_package(Qt5OpenGL)
 
@@ -31,8 +32,10 @@ file(GLOB SYNTHETIZEN_GLTEST_SRC
 
 add_executable (synthetizen_gltest ${SYNTHETIZEN_GLTEST_SRC} ${SYNTHETIZEN_GLTEST_RES})
 
+include_directories("${CMAKE_SOURCE_DIR}/src")
+
 # Use the Widgets and OpenGL modules from Qt 5.
 qt5_use_modules(synthetizen_gltest Widgets OpenGL)
-target_link_libraries(synthetizen_gltest ${QT_LIBRARIES} ${OPENGL_LIBRARIES})
+target_link_libraries(synthetizen_gltest synthetizen_graphics ${QT_LIBRARIES} ${OPENGL_LIBRARIES})
     
 endif (NOT TARGET ${PROJECT_NAME})

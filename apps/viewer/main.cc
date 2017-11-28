@@ -48,8 +48,7 @@
  **
  ****************************************************************************/
 
-#include <graphics/FrameBufferObject.h>
-#include "openglwindow.h"
+#include <graphics/openglwindow.h>
 
 #include <QtGui/QGuiApplication>
 #include <QtGui/QMatrix4x4>
@@ -66,9 +65,6 @@
 
 #include <cstdio>
 #include <iostream>
-
-using namespace synthetizen;
-using namespace graphics;
 
 class ViewerWindow : public OpenGLWindow
 {
