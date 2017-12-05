@@ -60,11 +60,18 @@
 #include <QtCore/qfileinfo.h>
 
 #include <QOpenGLTexture>
+#include <QCommandLineParser>
 
 #include <FreeImage.h>
 
 #include <cstdio>
 #include <iostream>
+
+#include <sstream>
+#include <iomanip>
+
+
+#define NUM_TEXTURES 4
 
 class ViewerWindow : public OpenGLWindow
 {
@@ -82,8 +89,8 @@ private:
 	GLuint m_texcAttr;
 	GLuint m_matrixUniform;
 
-	QOpenGLShaderProgram *m_program;
-	QOpenGLTexture		 *m_texture[3];
+	QOpenGLShaderProgram *m_program;	
+	QOpenGLTexture		 *m_texture[NUM_TEXTURES];
 	int m_frame;
 };
 
@@ -93,27 +100,13 @@ ViewerWindow::ViewerWindow()
 {
 }
 
-int main(int argc, char **argv)
-{
-	QGuiApplication app(argc, argv);
-
-	QSurfaceFormat format;
-	format.setSamples(16);
-
-	ViewerWindow window;
-	window.setFormat(format);
-	window.resize(640, 480);
-	window.show();
-
-	window.setAnimating(true);
-
-	return app.exec();
-}
 
 void ViewerWindow::loadTexture(const char *filename, int slot)
 {
 	FREE_IMAGE_FORMAT format = FreeImage_GetFileType(filename, 0);//Automatocally detects the format(from over 20 formats!)
 	bool isEXR = ((format == FIF_SGI/*Octane EXR*/) || (format == FIF_EXR));
+	//std::cout << "The image format is: " << format << std::endl;
+
 	if (!isEXR)
 	{
 		// simple case with png texture supported by QImage
@@ -225,7 +218,7 @@ void ViewerWindow::initialize()
 {
 	m_program = new QOpenGLShaderProgram(this);
 	m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/default.vp");
-	m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/texture.fp");
+	m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/textureCompose.fp");
 	m_program->link();
 	m_posAttr = m_program->attributeLocation("posAttr");
 //	m_colAttr = m_program->attributeLocation("colAttr");
@@ -273,7 +266,7 @@ void ViewerWindow::render()
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 
-	for (uint i=0; i<3; i++)
+	for (uint i=0; i<NUM_TEXTURES; i++)
 		m_texture[i]->bind(i, QOpenGLTexture::TextureUnitReset::ResetTextureUnit);
 
 	glDrawArrays(GL_QUADS, 0, 4);
@@ -284,4 +277,42 @@ void ViewerWindow::render()
 	m_program->release();
 
 	++m_frame;
+}
+
+int main(int argc, char **argv)
+{
+	QGuiApplication app(argc, argv);
+
+	QCommandLineParser parser;
+	QCommandLineOption backgroundOpt("a", QCoreApplication::translate("main", "Background of the composition"));
+	parser.addOption(backgroundOpt);
+
+	QCommandLineOption irpvOpt("b", QCoreApplication::translate("main", "Full render of the virtual part of the composition"));
+	parser.addOption(irpvOpt);
+
+	QCommandLineOption irOpt("c", QCoreApplication::translate("main", "Render of the floor of the composition"));
+	parser.addOption(irOpt);
+
+	QCommandLineOption alphaOpt("d", QCoreApplication::translate("main", "Alpha map of the composition"));
+	parser.addOption(alphaOpt);
+
+	parser.process(app);
+
+	QString backgroundPath = parser.value(backgroundOpt);
+	QString irpvPath = parser.value(irpvOpt);
+	QString irPath = parser.value(irOpt);
+	QString alphaPath = parser.value(alphaOpt);
+	
+
+	QSurfaceFormat format;
+	format.setSamples(16);
+
+	ViewerWindow window;
+	window.setFormat(format);
+	window.resize(640, 480);
+	window.show();
+
+	window.setAnimating(true);
+
+	return app.exec();
 }
