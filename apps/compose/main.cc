@@ -77,6 +77,7 @@ class ViewerWindow : public OpenGLWindow
 {
 public:
 	ViewerWindow();
+	ViewerWindow(const char* backgroundPath, const char* irpvPath, const char* irPath, const char* alphaPath);
 
 	void initialize() override;
 	void render() override;
@@ -89,6 +90,11 @@ private:
 	GLuint m_texcAttr;
 	GLuint m_matrixUniform;
 
+	const char* m_backgroundPath;
+	const char* m_irpvPath;
+	const char* m_irPath;
+	const char* m_alphaPath;
+
 	QOpenGLShaderProgram *m_program;	
 	QOpenGLTexture		 *m_texture[NUM_TEXTURES];
 	int m_frame;
@@ -98,6 +104,25 @@ ViewerWindow::ViewerWindow()
 	: m_program(0)
 	, m_frame(0)
 {
+	m_backgroundPath = "E:/Dan/Projects/synthetizen/resources/images/0000_ini.png";
+	m_irpvPath = "E:/Dan/Projects/synthetizen/resources/images/0000_irpv.png";
+	m_irPath = "E:/Dan/Projects/synthetizen/resources/images/0000_ir.png";
+	m_alphaPath = "E:/Dan/Projects/synthetizen/resources/images/0000_alpha.png";
+}
+
+
+ViewerWindow::ViewerWindow
+	(const char* backgroundPath,
+	const char* irpvPath,
+	const char* irPath,
+	const char* alphaPath)
+	: m_program(0)
+	, m_frame(0)
+{
+	m_backgroundPath = backgroundPath;
+	m_irpvPath = irpvPath;
+	m_irPath = irPath;
+	m_alphaPath = alphaPath;
 }
 
 
@@ -225,10 +250,10 @@ void ViewerWindow::initialize()
 	m_texcAttr = m_program->attributeLocation("texcAttr");
 	m_matrixUniform = m_program->uniformLocation("matrix");
 	
-	loadTexture("E:/Dan/Projects/synthetizen/resources/images/0000_ini.png", 0);
-	loadTexture("E:/Dan/Projects/synthetizen/resources/images/0000_irpv.png", 1);
-	loadTexture("E:/Dan/Projects/synthetizen/resources/images/0000_ir.png", 2);
-	loadTexture("E:/Dan/Projects/synthetizen/resources/images/0000_alpha.png", 3);
+	loadTexture(m_backgroundPath, 0);
+	loadTexture(m_irpvPath, 1);
+	loadTexture(m_irPath, 2);
+	loadTexture(m_alphaPath, 3);
 }
 
 void ViewerWindow::render()
@@ -298,16 +323,27 @@ int main(int argc, char **argv)
 
 	parser.process(app);
 
-	QString backgroundPath = parser.value(backgroundOpt);
-	QString irpvPath = parser.value(irpvOpt);
-	QString irPath = parser.value(irOpt);
-	QString alphaPath = parser.value(alphaOpt);
+	QString qBackgroundPath = parser.value(backgroundOpt);
+	std::string strBackgroundPath = qBackgroundPath.toUtf8().constData();
+	const char* backgroundPath = strBackgroundPath.c_str();
+
+	QString qIrpvPath = parser.value(irpvOpt);
+	std::string strIrpvPath = qIrpvPath.toUtf8().constData();
+	const char* irpvPath = strIrpvPath.c_str();
+
+	QString qIrPath = parser.value(irOpt);
+	std::string strIrPath = qIrPath.toUtf8().constData();
+	const char* irPath = strIrPath.c_str();
+
+	QString qAlphaPath = parser.value(alphaOpt);
+	std::string strAlphaPath = qAlphaPath.toUtf8().constData();
+	const char* alphaPath = strAlphaPath.c_str();
 	
 
 	QSurfaceFormat format;
 	format.setSamples(16);
 
-	ViewerWindow window;
+	ViewerWindow window(backgroundPath, irpvPath, irPath, alphaPath);
 	window.setFormat(format);
 	window.resize(640, 480);
 	window.show();
