@@ -161,17 +161,27 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 		QOpenGLTexture::PixelType pxtype; 		
 		switch (bpp)
 		{
-			case(96): {			// RGB 
+			case(128):
+			{			// Float - 128 bpp:
+						// The 32-bit-per-channel “full-float” format is encoded using standard OpenEXR channel tags.
+				pxintformat = QOpenGLTexture::TextureFormat::RGBA32U;
+				pxformat = QOpenGLTexture::PixelFormat::RGBA;
+				pxtype = QOpenGLTexture::PixelType::Float32;
+			} break;
+			case(96):
+			{			// RGB 
 				pxintformat = QOpenGLTexture::TextureFormat::RGBA16_UNorm; /*RGBA8_UNorm*/
 				pxformat = QOpenGLTexture::PixelFormat::RGB;
 				pxtype = QOpenGLTexture::PixelType::Float32;
 			} break;
-			case(32): { 		// Depth
+			case(32):
+			{ 		// Depth
 				pxintformat = QOpenGLTexture::TextureFormat::RGBA16_UNorm;
 				pxformat = QOpenGLTexture::PixelFormat::Luminance;
 				pxtype = QOpenGLTexture::PixelType::Float32;
 			} break;
-			case(24): { 		// RGB 24bit (8bit/channel)
+			case(24):
+			{ 		// RGB 24bit (8bit/channel)
 				pxintformat = QOpenGLTexture::TextureFormat::RGBA16_UNorm;
 				pxformat = QOpenGLTexture::PixelFormat::RGB;
 				pxtype = QOpenGLTexture::PixelType::UInt8;
@@ -304,44 +314,78 @@ void ViewerWindow::render()
 	++m_frame;
 }
 
+
+/* TODO:
+re-check image formats
+check if fourth image consideration is missing
+check image exr header
+
+or
+trace where it's stuck
+*/
+
 int main(int argc, char **argv)
 {
 	QGuiApplication app(argc, argv);
 
 	QCommandLineParser parser;
-	QCommandLineOption backgroundOpt("a", QCoreApplication::translate("main", "Background of the composition"));
+
+	QCommandLineOption backgroundOpt("bg",
+		QCoreApplication::translate("main", "Background of the composition"),
+		QCoreApplication::translate("main", "directory"));
 	parser.addOption(backgroundOpt);
+	//std::cout << "BG Read" << std::endl;
 
-	QCommandLineOption irpvOpt("b", QCoreApplication::translate("main", "Full render of the virtual part of the composition"));
+	QCommandLineOption irpvOpt("irpv",
+		QCoreApplication::translate("main", "Full render of the virtual part of the composition"),
+		QCoreApplication::translate("main", "directory"));
 	parser.addOption(irpvOpt);
+	//std::cout << "Irpv Read" << std::endl;
 
-	QCommandLineOption irOpt("c", QCoreApplication::translate("main", "Render of the floor of the composition"));
+	QCommandLineOption irOpt("ir",
+		QCoreApplication::translate("main", "Render of the floor of the composition"),
+		QCoreApplication::translate("main", "directory"));
 	parser.addOption(irOpt);
+	//std::cout << "Ir Read" << std::endl;
 
-	QCommandLineOption alphaOpt("d", QCoreApplication::translate("main", "Alpha map of the composition"));
+	QCommandLineOption alphaOpt("a",
+		QCoreApplication::translate("main", "Alpha map of the composition"),
+		QCoreApplication::translate("main", "directory"));
 	parser.addOption(alphaOpt);
+	//std::cout << "Alpha Read" << std::endl;
 
 	parser.process(app);
 
 	QString qBackgroundPath = parser.value(backgroundOpt);
 	std::string strBackgroundPath = qBackgroundPath.toUtf8().constData();
+	//const char* backgroundPath = qBackgroundPath.toLatin1().data();
 	const char* backgroundPath = strBackgroundPath.c_str();
+	//std::cout << "BG Converted: " << backgroundPath << std::endl;
 
 	QString qIrpvPath = parser.value(irpvOpt);
 	std::string strIrpvPath = qIrpvPath.toUtf8().constData();
 	const char* irpvPath = strIrpvPath.c_str();
+	//std::cout << "Irpv Converted: " << irpvPath << std::endl;
 
 	QString qIrPath = parser.value(irOpt);
 	std::string strIrPath = qIrPath.toUtf8().constData();
 	const char* irPath = strIrPath.c_str();
+	//std::cout << "Ir Converted: " << irPath << std::endl;
 
 	QString qAlphaPath = parser.value(alphaOpt);
 	std::string strAlphaPath = qAlphaPath.toUtf8().constData();
 	const char* alphaPath = strAlphaPath.c_str();
-	
+	//std::cout << "Alpha Converted: " << alphaPath << std::endl;
+
 
 	QSurfaceFormat format;
 	format.setSamples(16);
+
+	std::cout << "Creating composition with paths: "<< std::endl 
+		<< backgroundPath << std::endl
+		<< irpvPath << std::endl 
+		<< irPath << std::endl 
+		<< alphaPath << std::endl;
 
 	ViewerWindow window(backgroundPath, irpvPath, irPath, alphaPath);
 	window.setFormat(format);

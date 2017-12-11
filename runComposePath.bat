@@ -1,1 +1,6 @@
-E:\Dan\Projects\synthetizen\build\apps\compose\Debug\synthetizen_compose.exe -"E:\Dan\Projects\synthetizen\images\0000_ini.png" -"E:\Dan\Projects\synthetizen\images\0000_irpv.png" -"E:\Dan\Projects\synthetizen\images\0000_ir.png" -"E:\Dan\Projects\synthetizen\images\0000_alpha.png"
+E:\Dan\Projects\synthetizen\build\apps\compose\Debug\synthetizen_compose.exe ^
+ --bg "E:\Dan\Projects\synthetizen\images\0000_ini.png" ^
+ --irpv "E:\Dan\Projects\synthetizen\images\0000_irpv.png" ^
+ --ir "E:\Dan\Projects\synthetizen\images\0000_ir.png" ^
+ --a "E:\Dan\Projects\synthetizen\images\0000_alpha.png"
+ pause
