@@ -185,7 +185,8 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 
 		//FreeImage loads in BGR format, so you need to swap some bytes(Or use GL_BGR).
 		//std::cout << "The uchar image starts ... : " << pixeles[0] << std::endl; //Some debugging code
-
+		float min_depth = FLT_MAX;
+		float max_depth = FLT_MIN;
 		for (size_t j = 0; j < w*h; j++)
 		{
 			//		std::cout << "j = " << j << std::endl;
@@ -201,7 +202,9 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 				texture[j * 3 + 2] = pixels[j * 3 + 2];
 			}
 			else {
-				depth[j] = pixels[j];
+				depth[j] = pixels[j]; // / 357.f; // normalization factor found from max_depth
+				if (pixels[j] > max_depth) max_depth = pixels[j];
+				if (pixels[j] < min_depth) min_depth = pixels[j];
 			}
 			//		texture[j * 4 + 3] = 1.f;
 
@@ -210,7 +213,10 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 			//					  <<"**"<<(int)textura[j*4+2]
 			//					  <<"**"<<(int)textura[j*4+3]<<std::endl;
 		}
-
+		if (bpp == 32) {
+			std::cout << "min_depth: " << min_depth << std::endl;
+			std::cout << "max_depth: " << max_depth << std::endl;
+		}
 		m_texture[slot]->setData(pxformat, pxtype, (GLvoid*) (bpp != 32) ? texture : depth);
 	}
 
