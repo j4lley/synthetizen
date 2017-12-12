@@ -222,9 +222,8 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 
 	m_program->bind();
 	m_program->setUniformValue("texture", 0);
-	m_program->setUniformValue("IRPV", 1);
-	m_program->setUniformValue("IR", 2);
-	m_program->setUniformValue("Alpha", 3);
+	m_program->setUniformValue("textureA", 1);
+	m_program->setUniformValue("textureB", 2);
 }
 
 void ViewerWindow::initialize()
@@ -238,10 +237,9 @@ void ViewerWindow::initialize()
 	m_texcAttr = m_program->attributeLocation("texcAttr");
 	m_matrixUniform = m_program->uniformLocation("matrix");
 	
-	loadTexture("E:/Dan/Projects/synthetizen/resources/images/0000_ini.png", 0);
-	loadTexture("E:/Dan/Projects/synthetizen/resources/images/0000_irpv.png", 1);
-	loadTexture("E:/Dan/Projects/synthetizen/resources/images/0000_ir.png", 2);
-	loadTexture("E:/Dan/Projects/synthetizen/resources/images/0000_alpha.png", 3);
+	loadTexture("D:/workspace/adas/github/synthetizen/resources/images/frame_rgb.exr", 0);
+	loadTexture("D:/workspace/adas/github/synthetizen/resources/images/frame_depth.exr", 1);
+	loadTexture("D:/workspace/adas/github/synthetizen/resources/images/frame_ss.png", 2);
 }
 
 void ViewerWindow::render()
