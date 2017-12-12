@@ -267,7 +267,7 @@ void ViewerWindow::initialize()
 {
 	m_program = new QOpenGLShaderProgram(this);
 	m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/default.vp");
-	m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/texture.fp");
+	m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/differential_rendering.fp");
 	m_program->link();
 	m_posAttr = m_program->attributeLocation("posAttr");
 //	m_colAttr = m_program->attributeLocation("colAttr");
