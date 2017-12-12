@@ -162,9 +162,8 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 		switch (bpp)
 		{
 			case(128):
-			{			// Float - 128 bpp:
-						// The 32-bit-per-channel “full-float” format is encoded using standard OpenEXR channel tags.
-				pxintformat = QOpenGLTexture::TextureFormat::RGBA32U;
+			{			// Float - 128 bpp // bitmap type 28
+				pxintformat = QOpenGLTexture::TextureFormat::RGBA16_UNorm;
 				pxformat = QOpenGLTexture::PixelFormat::RGBA;
 				pxtype = QOpenGLTexture::PixelType::Float32;
 			} break;
@@ -186,6 +185,12 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 				pxformat = QOpenGLTexture::PixelFormat::RGB;
 				pxtype = QOpenGLTexture::PixelType::UInt8;
 			} break;
+			default: // didn't solve the stuck 4th image problem // left it as failproof
+			{
+				pxintformat = QOpenGLTexture::TextureFormat::RGBA16_UNorm;
+				pxformat = QOpenGLTexture::PixelFormat::RGB;
+				pxtype = QOpenGLTexture::PixelType::Float32;
+			} break;
 		}
 		m_texture[slot]->setFormat(pxintformat); // internal format
 		m_texture[slot]->allocateStorage(pxformat, pxtype); // format & type
@@ -195,8 +200,11 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 
 		//GLubyte* texture = new GLubyte[4 * w*h];
 		//char* pixels = (char*)FreeImage_GetBits(imagen);
-		GLfloat* texture = new GLfloat[3 * w*h];
+
+		//GLfloat* texture = new GLfloat[3 * w*h];
+		GLfloat* texture = new GLfloat[4 * w*h];
 		GLfloat* depth; if (bpp == 32) depth = new GLfloat[w*h];
+
 		//GLubyte* texture = new GLubyte[3 * w*h];
 
 		/*
@@ -224,9 +232,15 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 			texture[j * 4 + 3] = 0; 			    // GLubyte(255);
 	*/
 			if (bpp != 32) {
-				texture[j * 3 + 0] = pixels[j * 3 + 0];
+				/*texture[j * 3 + 0] = pixels[j * 3 + 0];
 				texture[j * 3 + 1] = pixels[j * 3 + 1];
-				texture[j * 3 + 2] = pixels[j * 3 + 2];
+				texture[j * 3 + 2] = pixels[j * 3 + 2];*/
+
+
+				texture[j * 4 + 0] = pixels[j * 4 + 0];
+				texture[j * 4 + 1] = pixels[j * 4 + 1];
+				texture[j * 4 + 2] = pixels[j * 4 + 2];
+				texture[j * 4 + 3] = pixels[j * 4 + 3];
 			}
 			else {
 				depth[j] = pixels[j];
@@ -259,10 +273,14 @@ void ViewerWindow::initialize()
 //	m_colAttr = m_program->attributeLocation("colAttr");
 	m_texcAttr = m_program->attributeLocation("texcAttr");
 	m_matrixUniform = m_program->uniformLocation("matrix");
-	
+
+	std::cout << "Loading Bg" << std::endl;
 	loadTexture(m_backgroundPath, 0);
+	std::cout << "Loading irpv" << std::endl;
 	loadTexture(m_irpvPath, 1);
+	std::cout << "Loading ir" << std::endl;
 	loadTexture(m_irPath, 2);
+	std::cout << "Loading Alpha" << std::endl;
 	loadTexture(m_alphaPath, 3);
 }
 
