@@ -1,6 +1,5 @@
 <RCC>
 <qresource prefix="/images">
     <file alias="andromeda.png">images/andromeda.png</file>
-	<file alias="frame_rgb.exr">images/frame_rgb.exr</file>
 </qresource>
 </RCC>

@@ -60,16 +60,24 @@
 #include <QtCore/qfileinfo.h>
 
 #include <QOpenGLTexture>
+#include <QCommandLineParser>
 
 #include <FreeImage.h>
 
 #include <cstdio>
 #include <iostream>
 
+#include <sstream>
+#include <iomanip>
+
+
+#define NUM_TEXTURES 4
+
 class ViewerWindow : public OpenGLWindow
 {
 public:
 	ViewerWindow();
+	ViewerWindow(const char* backgroundPath, const char* irpvPath, const char* irPath, const char* alphaPath);
 
 	void initialize() override;
 	void render() override;
@@ -82,8 +90,13 @@ private:
 	GLuint m_texcAttr;
 	GLuint m_matrixUniform;
 
-	QOpenGLShaderProgram *m_program;
-	QOpenGLTexture		 *m_texture[3];
+	const char* m_backgroundPath;
+	const char* m_irpvPath;
+	const char* m_irPath;
+	const char* m_alphaPath;
+
+	QOpenGLShaderProgram *m_program;	
+	QOpenGLTexture		 *m_texture[NUM_TEXTURES];
 	int m_frame;
 };
 
@@ -91,29 +104,34 @@ ViewerWindow::ViewerWindow()
 	: m_program(0)
 	, m_frame(0)
 {
+	m_backgroundPath = "E:/Dan/Projects/synthetizen/resources/images/0000_ini.png";
+	m_irpvPath = "E:/Dan/Projects/synthetizen/resources/images/0000_irpv.png";
+	m_irPath = "E:/Dan/Projects/synthetizen/resources/images/0000_ir.png";
+	m_alphaPath = "E:/Dan/Projects/synthetizen/resources/images/0000_alpha.png";
 }
 
-int main(int argc, char **argv)
+
+ViewerWindow::ViewerWindow
+	(const char* backgroundPath,
+	const char* irpvPath,
+	const char* irPath,
+	const char* alphaPath)
+	: m_program(0)
+	, m_frame(0)
 {
-	QGuiApplication app(argc, argv);
-
-	QSurfaceFormat format;
-	format.setSamples(16);
-
-	ViewerWindow window;
-	window.setFormat(format);
-	window.resize(640, 480);
-	window.show();
-
-	window.setAnimating(true);
-
-	return app.exec();
+	m_backgroundPath = backgroundPath;
+	m_irpvPath = irpvPath;
+	m_irPath = irPath;
+	m_alphaPath = alphaPath;
 }
+
 
 void ViewerWindow::loadTexture(const char *filename, int slot)
 {
 	FREE_IMAGE_FORMAT format = FreeImage_GetFileType(filename, 0);//Automatocally detects the format(from over 20 formats!)
 	bool isEXR = ((format == FIF_SGI/*Octane EXR*/) || (format == FIF_EXR));
+	//std::cout << "The image format is: " << format << std::endl;
+
 	if (!isEXR)
 	{
 		// simple case with png texture supported by QImage
@@ -143,20 +161,35 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 		QOpenGLTexture::PixelType pxtype; 		
 		switch (bpp)
 		{
-			case(96): {			// RGB 
+			case(128):
+			{			// Float - 128 bpp // bitmap type 28
+				pxintformat = QOpenGLTexture::TextureFormat::RGBA16_UNorm;
+				pxformat = QOpenGLTexture::PixelFormat::RGBA;
+				pxtype = QOpenGLTexture::PixelType::Float32;
+			} break;
+			case(96):
+			{			// RGB 
 				pxintformat = QOpenGLTexture::TextureFormat::RGBA16_UNorm; /*RGBA8_UNorm*/
 				pxformat = QOpenGLTexture::PixelFormat::RGB;
 				pxtype = QOpenGLTexture::PixelType::Float32;
 			} break;
-			case(32): { 		// Depth
+			case(32):
+			{ 		// Depth
 				pxintformat = QOpenGLTexture::TextureFormat::RGBA16_UNorm;
 				pxformat = QOpenGLTexture::PixelFormat::Luminance;
 				pxtype = QOpenGLTexture::PixelType::Float32;
 			} break;
-			case(24): { 		// RGB 24bit (8bit/channel)
+			case(24):
+			{ 		// RGB 24bit (8bit/channel)
 				pxintformat = QOpenGLTexture::TextureFormat::RGBA16_UNorm;
 				pxformat = QOpenGLTexture::PixelFormat::RGB;
 				pxtype = QOpenGLTexture::PixelType::UInt8;
+			} break;
+			default: // didn't solve the stuck 4th image problem // left it as failproof
+			{
+				pxintformat = QOpenGLTexture::TextureFormat::RGBA16_UNorm;
+				pxformat = QOpenGLTexture::PixelFormat::RGB;
+				pxtype = QOpenGLTexture::PixelType::Float32;
 			} break;
 		}
 		m_texture[slot]->setFormat(pxintformat); // internal format
@@ -167,8 +200,11 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 
 		//GLubyte* texture = new GLubyte[4 * w*h];
 		//char* pixels = (char*)FreeImage_GetBits(imagen);
-		GLfloat* texture = new GLfloat[3 * w*h];
+
+		//GLfloat* texture = new GLfloat[3 * w*h];
+		GLfloat* texture = new GLfloat[4 * w*h];
 		GLfloat* depth; if (bpp == 32) depth = new GLfloat[w*h];
+
 		//GLubyte* texture = new GLubyte[3 * w*h];
 
 		/*
@@ -185,8 +221,7 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 
 		//FreeImage loads in BGR format, so you need to swap some bytes(Or use GL_BGR).
 		//std::cout << "The uchar image starts ... : " << pixeles[0] << std::endl; //Some debugging code
-		float min_depth = FLT_MAX;
-		float max_depth = FLT_MIN;
+
 		for (size_t j = 0; j < w*h; j++)
 		{
 			//		std::cout << "j = " << j << std::endl;
@@ -197,14 +232,18 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 			texture[j * 4 + 3] = 0; 			    // GLubyte(255);
 	*/
 			if (bpp != 32) {
-				texture[j * 3 + 0] = pixels[j * 3 + 0];
+				/*texture[j * 3 + 0] = pixels[j * 3 + 0];
 				texture[j * 3 + 1] = pixels[j * 3 + 1];
-				texture[j * 3 + 2] = pixels[j * 3 + 2];
+				texture[j * 3 + 2] = pixels[j * 3 + 2];*/
+
+
+				texture[j * 4 + 0] = pixels[j * 4 + 0];
+				texture[j * 4 + 1] = pixels[j * 4 + 1];
+				texture[j * 4 + 2] = pixels[j * 4 + 2];
+				texture[j * 4 + 3] = pixels[j * 4 + 3];
 			}
 			else {
-				depth[j] = pixels[j]; // / 357.f; // normalization factor found from max_depth
-				if (pixels[j] > max_depth) max_depth = pixels[j];
-				if (pixels[j] < min_depth) min_depth = pixels[j];
+				depth[j] = pixels[j];
 			}
 			//		texture[j * 4 + 3] = 1.f;
 
@@ -213,10 +252,7 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 			//					  <<"**"<<(int)textura[j*4+2]
 			//					  <<"**"<<(int)textura[j*4+3]<<std::endl;
 		}
-		if (bpp == 32) {
-			std::cout << "min_depth: " << min_depth << std::endl;
-			std::cout << "max_depth: " << max_depth << std::endl;
-		}
+
 		m_texture[slot]->setData(pxformat, pxtype, (GLvoid*) (bpp != 32) ? texture : depth);
 	}
 
@@ -231,17 +267,21 @@ void ViewerWindow::initialize()
 {
 	m_program = new QOpenGLShaderProgram(this);
 	m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/default.vp");
-	m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/texture.fp");
+	m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/textureCompose.fp");
 	m_program->link();
 	m_posAttr = m_program->attributeLocation("posAttr");
 //	m_colAttr = m_program->attributeLocation("colAttr");
 	m_texcAttr = m_program->attributeLocation("texcAttr");
 	m_matrixUniform = m_program->uniformLocation("matrix");
-	
-	loadTexture("E:/Dan/Projects/synthetizen/resources/images/0000_ini.png", 0);
-	loadTexture("E:/Dan/Projects/synthetizen/resources/images/0000_irpv.png", 1);
-	loadTexture("E:/Dan/Projects/synthetizen/resources/images/0000_ir.png", 2);
-	loadTexture("E:/Dan/Projects/synthetizen/resources/images/0000_alpha.png", 3);
+
+	std::cout << "Loading Bg" << std::endl;
+	loadTexture(m_backgroundPath, 0);
+	std::cout << "Loading irpv" << std::endl;
+	loadTexture(m_irpvPath, 1);
+	std::cout << "Loading ir" << std::endl;
+	loadTexture(m_irPath, 2);
+	std::cout << "Loading Alpha" << std::endl;
+	loadTexture(m_alphaPath, 3);
 }
 
 void ViewerWindow::render()
@@ -279,7 +319,7 @@ void ViewerWindow::render()
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 
-	for (uint i=0; i<3; i++)
+	for (uint i=0; i<NUM_TEXTURES; i++)
 		m_texture[i]->bind(i, QOpenGLTexture::TextureUnitReset::ResetTextureUnit);
 
 	glDrawArrays(GL_QUADS, 0, 4);
@@ -290,4 +330,87 @@ void ViewerWindow::render()
 	m_program->release();
 
 	++m_frame;
+}
+
+
+/* TODO:
+re-check image formats
+check if fourth image consideration is missing
+check image exr header
+
+or
+trace where it's stuck
+*/
+
+int main(int argc, char **argv)
+{
+	QGuiApplication app(argc, argv);
+
+	QCommandLineParser parser;
+
+	QCommandLineOption backgroundOpt("bg",
+		QCoreApplication::translate("main", "Background of the composition"),
+		QCoreApplication::translate("main", "directory"));
+	parser.addOption(backgroundOpt);
+	//std::cout << "BG Read" << std::endl;
+
+	QCommandLineOption irpvOpt("irpv",
+		QCoreApplication::translate("main", "Full render of the virtual part of the composition"),
+		QCoreApplication::translate("main", "directory"));
+	parser.addOption(irpvOpt);
+	//std::cout << "Irpv Read" << std::endl;
+
+	QCommandLineOption irOpt("ir",
+		QCoreApplication::translate("main", "Render of the floor of the composition"),
+		QCoreApplication::translate("main", "directory"));
+	parser.addOption(irOpt);
+	//std::cout << "Ir Read" << std::endl;
+
+	QCommandLineOption alphaOpt("a",
+		QCoreApplication::translate("main", "Alpha map of the composition"),
+		QCoreApplication::translate("main", "directory"));
+	parser.addOption(alphaOpt);
+	//std::cout << "Alpha Read" << std::endl;
+
+	parser.process(app);
+
+	QString qBackgroundPath = parser.value(backgroundOpt);
+	std::string strBackgroundPath = qBackgroundPath.toUtf8().constData();
+	//const char* backgroundPath = qBackgroundPath.toLatin1().data();
+	const char* backgroundPath = strBackgroundPath.c_str();
+	//std::cout << "BG Converted: " << backgroundPath << std::endl;
+
+	QString qIrpvPath = parser.value(irpvOpt);
+	std::string strIrpvPath = qIrpvPath.toUtf8().constData();
+	const char* irpvPath = strIrpvPath.c_str();
+	//std::cout << "Irpv Converted: " << irpvPath << std::endl;
+
+	QString qIrPath = parser.value(irOpt);
+	std::string strIrPath = qIrPath.toUtf8().constData();
+	const char* irPath = strIrPath.c_str();
+	//std::cout << "Ir Converted: " << irPath << std::endl;
+
+	QString qAlphaPath = parser.value(alphaOpt);
+	std::string strAlphaPath = qAlphaPath.toUtf8().constData();
+	const char* alphaPath = strAlphaPath.c_str();
+	//std::cout << "Alpha Converted: " << alphaPath << std::endl;
+
+
+	QSurfaceFormat format;
+	format.setSamples(16);
+
+	std::cout << "Creating composition with paths: "<< std::endl 
+		<< backgroundPath << std::endl
+		<< irpvPath << std::endl 
+		<< irPath << std::endl 
+		<< alphaPath << std::endl;
+
+	ViewerWindow window(backgroundPath, irpvPath, irPath, alphaPath);
+	window.setFormat(format);
+	window.resize(640, 480);
+	window.show();
+
+	window.setAnimating(true);
+
+	return app.exec();
 }
