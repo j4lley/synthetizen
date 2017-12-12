@@ -76,7 +76,7 @@
 class ViewerWindow : public OpenGLWindow
 {
 public:
-	ViewerWindow();
+	//ViewerWindow();
 	ViewerWindow(const char* backgroundPath, const char* irpvPath, const char* irPath, const char* alphaPath);
 
 	void initialize() override;
@@ -100,7 +100,7 @@ private:
 	int m_frame;
 };
 
-ViewerWindow::ViewerWindow()
+/*ViewerWindow::ViewerWindow()
 	: m_program(0)
 	, m_frame(0)
 {
@@ -108,7 +108,7 @@ ViewerWindow::ViewerWindow()
 	m_irpvPath = "E:/Dan/Projects/synthetizen/resources/images/0000_irpv.png";
 	m_irPath = "E:/Dan/Projects/synthetizen/resources/images/0000_ir.png";
 	m_alphaPath = "E:/Dan/Projects/synthetizen/resources/images/0000_alpha.png";
-}
+}*/
 
 
 ViewerWindow::ViewerWindow
@@ -267,7 +267,7 @@ void ViewerWindow::initialize()
 {
 	m_program = new QOpenGLShaderProgram(this);
 	m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/default.vp");
-	m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/textureCompose.fp");
+	m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/texture.fp");
 	m_program->link();
 	m_posAttr = m_program->attributeLocation("posAttr");
 //	m_colAttr = m_program->attributeLocation("colAttr");
@@ -330,16 +330,14 @@ void ViewerWindow::render()
 	m_program->release();
 
 	++m_frame;
+
+	// std::cout << m_frame << " ";
 }
 
 
 /* TODO:
-re-check image formats
-check if fourth image consideration is missing
-check image exr header
-
-or
-trace where it's stuck
+Investigar Qt para ver donde se puede llamar al guardado
+Evitar que haga render indefinidamente -> (1 render y salga ?)
 */
 
 int main(int argc, char **argv)
@@ -376,7 +374,6 @@ int main(int argc, char **argv)
 
 	QString qBackgroundPath = parser.value(backgroundOpt);
 	std::string strBackgroundPath = qBackgroundPath.toUtf8().constData();
-	//const char* backgroundPath = qBackgroundPath.toLatin1().data();
 	const char* backgroundPath = strBackgroundPath.c_str();
 	//std::cout << "BG Converted: " << backgroundPath << std::endl;
 
@@ -409,8 +406,11 @@ int main(int argc, char **argv)
 	window.setFormat(format);
 	window.resize(640, 480);
 	window.show();
-
+	
 	window.setAnimating(true);
-
+	
+	// Loading and composition starts now
 	return app.exec();
+
+	// This is after main loop
 }
