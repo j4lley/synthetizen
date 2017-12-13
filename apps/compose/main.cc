@@ -104,10 +104,10 @@ ViewerWindow::ViewerWindow()
 	: m_program(0)
 	, m_frame(0)
 {
-	m_backgroundPath = "../../../../images/0000_ini.png";
-	m_irpvPath = "../../../../images/0000_irpv.png";
-	m_irPath = "../../../../images/0000_ir.png";
-	m_alphaPath = "../../../../images/0000_alpha.png";
+	m_backgroundPath = "././././images/0000_ini.png";
+	m_irpvPath = "././././images/0000_irpv.png";
+	m_irPath = "././././images/0000_ir.png";
+	m_alphaPath = "././././images/0000_alpha.png";
 }
 
 
@@ -274,7 +274,7 @@ void ViewerWindow::initialize()
 	m_texcAttr = m_program->attributeLocation("texcAttr");
 	m_matrixUniform = m_program->uniformLocation("matrix");
 
-	std::cout << "Loading Bg" << std::endl;
+	std::cout << "Loading Bg" << m_backgroundPath << std::endl;
 	loadTexture(m_backgroundPath, 0);
 	std::cout << "Loading irpv" << std::endl;
 	loadTexture(m_irpvPath, 1);
@@ -396,14 +396,19 @@ int main(int argc, char **argv)
 	QSurfaceFormat format;
 	format.setSamples(16);
 
-	std::cout << "Creating composition with paths: "<< std::endl 
+	std::cout << "Creating composition with paths: " << std::endl 
 		<< backgroundPath << std::endl
 		<< irpvPath << std::endl 
 		<< irPath << std::endl 
 		<< alphaPath << std::endl;
 
-	//ViewerWindow window;
+	if (strBackgroundPath.empty() || strIrpvPath.empty() || strIrPath.empty() || strAlphaPath.empty())
+	{
+		std::cout << "One or more image paths are missing." << std::endl << "Exiting application." << std::endl;
+	} else {
+
 	ViewerWindow window(backgroundPath, irpvPath, irPath, alphaPath);
+
 	window.setFormat(format);
 	window.resize(640, 480);
 	window.show();
@@ -414,4 +419,6 @@ int main(int argc, char **argv)
 	return app.exec();
 
 	// This is after main loop
+	}
+
 }
