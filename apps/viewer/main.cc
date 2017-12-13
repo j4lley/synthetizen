@@ -60,6 +60,7 @@
 #include <QtCore/qfileinfo.h>
 
 #include <QOpenGLTexture>
+#include <QCommandLineParser>
 
 #include <FreeImage.h>
 
@@ -70,6 +71,7 @@ class ViewerWindow : public OpenGLWindow
 {
 public:
 	ViewerWindow();
+	ViewerWindow(const char* tex_path, const char* tex_A_path, const char* tex_B_path);
 
 	void initialize() override;
 	void render() override;
@@ -82,6 +84,10 @@ private:
 	GLuint m_texcAttr;
 	GLuint m_matrixUniform;
 
+	const char* m_tex_path;
+	const char* m_tex_A_path;
+	const char* m_tex_B_path;
+
 	QOpenGLShaderProgram *m_program;
 	QOpenGLTexture		 *m_texture[3];
 	int m_frame;
@@ -91,11 +97,60 @@ ViewerWindow::ViewerWindow()
 	: m_program(0)
 	, m_frame(0)
 {
+	m_tex_path = "../../../../resources/images/frame_rgb.exr";
+	m_tex_A_path = "../../../../resources/images/frame_depth.exr";
+	m_tex_B_path = "../../../../resources/images/frame_ss.png";
+}
+
+ViewerWindow::ViewerWindow
+	(const char* tex_path,
+	const char* tex_A_path,
+	const char* tex_B_path)
+	: m_program(0)
+	, m_frame(0)
+{
+	m_tex_path = tex_path;
+	m_tex_A_path = tex_A_path;
+	m_tex_B_path = tex_B_path;
 }
 
 int main(int argc, char **argv)
 {
 	QGuiApplication app(argc, argv);
+
+
+	QCommandLineParser parser;
+
+	QCommandLineOption texOpt("t",
+		QCoreApplication::translate("main", "texture"),
+		QCoreApplication::translate("main", "directory"));
+	parser.addOption(texOpt);
+
+	QCommandLineOption texAOpt("ta",
+		QCoreApplication::translate("main", "texture A"),
+		QCoreApplication::translate("main", "directory"));
+	parser.addOption(texAOpt);
+
+	QCommandLineOption texBOpt("tb",
+		QCoreApplication::translate("main", "texture B"),
+		QCoreApplication::translate("main", "directory"));
+	parser.addOption(texBOpt);
+
+
+	parser.process(app);
+
+	QString qTexPath = parser.value(texOpt);
+	std::string strTexPath = qTexPath.toUtf8().constData();
+	const char* texPath = strTexPath.c_str();
+
+	QString qTexAPath = parser.value(texAOpt);
+	std::string strTexAPath = qTexAPath.toUtf8().constData();
+	const char* texAPath = strTexAPath.c_str();
+
+	QString qTexBPath = parser.value(texBOpt);
+	std::string strTexBPath = qTexBPath.toUtf8().constData();
+	const char* texBPath = strTexBPath.c_str();
+	
 
 	QSurfaceFormat format;
 	format.setSamples(16);
@@ -237,9 +292,9 @@ void ViewerWindow::initialize()
 	m_texcAttr = m_program->attributeLocation("texcAttr");
 	m_matrixUniform = m_program->uniformLocation("matrix");
 	
-	loadTexture("D:/workspace/adas/github/synthetizen/resources/images/frame_rgb.exr", 0);
-	loadTexture("D:/workspace/adas/github/synthetizen/resources/images/frame_depth.exr", 1);
-	loadTexture("D:/workspace/adas/github/synthetizen/resources/images/frame_ss.png", 2);
+	loadTexture(m_tex_path, 0);
+	loadTexture(m_tex_A_path, 1);
+	loadTexture(m_tex_B_path, 2);
 }
 
 void ViewerWindow::render()

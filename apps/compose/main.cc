@@ -76,7 +76,7 @@
 class ViewerWindow : public OpenGLWindow
 {
 public:
-	//ViewerWindow();
+	ViewerWindow();
 	ViewerWindow(const char* backgroundPath, const char* irpvPath, const char* irPath, const char* alphaPath);
 
 	void initialize() override;
@@ -100,15 +100,15 @@ private:
 	int m_frame;
 };
 
-/*ViewerWindow::ViewerWindow()
+ViewerWindow::ViewerWindow()
 	: m_program(0)
 	, m_frame(0)
 {
-	m_backgroundPath = "E:/Dan/Projects/synthetizen/resources/images/0000_ini.png";
-	m_irpvPath = "E:/Dan/Projects/synthetizen/resources/images/0000_irpv.png";
-	m_irPath = "E:/Dan/Projects/synthetizen/resources/images/0000_ir.png";
-	m_alphaPath = "E:/Dan/Projects/synthetizen/resources/images/0000_alpha.png";
-}*/
+	m_backgroundPath = "../../../../images/0000_ini.png";
+	m_irpvPath = "../../../../images/0000_irpv.png";
+	m_irPath = "../../../../images/0000_ir.png";
+	m_alphaPath = "../../../../images/0000_alpha.png";
+}
 
 
 ViewerWindow::ViewerWindow
@@ -402,6 +402,7 @@ int main(int argc, char **argv)
 		<< irPath << std::endl 
 		<< alphaPath << std::endl;
 
+	//ViewerWindow window;
 	ViewerWindow window(backgroundPath, irpvPath, irPath, alphaPath);
 	window.setFormat(format);
 	window.resize(640, 480);
