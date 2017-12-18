@@ -17,5 +17,6 @@ void main()
    float gamma = 1.0;
    //gl_FragColor = vec4(A * pow(rgb_color.r, gamma), A * pow(rgb_color.g, gamma), A * pow(rgb_color.b, gamma), 1.0);
    //gl_FragColor = vec4(vec3(A * pow(depth.r, 1.0/gamma)), 1.0);
-   gl_FragColor = 0.75*rgb_color + 0.25*ss_color;
+   //gl_FragColor = 0.75*rgb_color + 0.25*ss_color;
+   gl_FragColor = rgb_color;
 }

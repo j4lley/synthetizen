@@ -152,3 +152,11 @@
       if (animating)
           renderLater();
   }
+
+  GLuint OpenGLWindow::defaultFramebufferObject() const
+  {	  
+	  if (m_context) {
+		  return m_context->defaultFramebufferObject();
+	  }
+	  return GLuint(0);
+  }

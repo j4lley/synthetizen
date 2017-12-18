@@ -61,6 +61,7 @@
 
 #include <QOpenGLTexture>
 #include <QCommandLineParser>
+#include <QFileDialog>
 
 #include <FreeImage.h>
 
@@ -95,15 +96,25 @@ private:
 	const char* m_irPath;
 	const char* m_alphaPath;
 
+	bool m_saved;
+
 	QOpenGLShaderProgram *m_program;	
 	QOpenGLTexture		 *m_texture[NUM_TEXTURES];
 	int m_frame;
+
+	unsigned int m_winWidth;
+	unsigned int m_winHeight;
+
+	GLuint m_defaultFBO;
+	std::vector<float> m_pixelBuffer;
 };
 
 ViewerWindow::ViewerWindow()
 	: m_program(0)
 	, m_frame(0)
 {
+	m_saved = false;
+
 	m_backgroundPath = "././././images/0000_ini.png";
 	m_irpvPath = "././././images/0000_irpv.png";
 	m_irPath = "././././images/0000_ir.png";
@@ -119,6 +130,8 @@ ViewerWindow::ViewerWindow
 	: m_program(0)
 	, m_frame(0)
 {
+	m_saved = false;
+
 	m_backgroundPath = backgroundPath;
 	m_irpvPath = irpvPath;
 	m_irPath = irPath;
@@ -282,6 +295,13 @@ void ViewerWindow::initialize()
 	loadTexture(m_irPath, 2);
 	std::cout << "Loading Alpha" << std::endl;
 	loadTexture(m_alphaPath, 3);
+
+	m_defaultFBO = GLuint(0);
+
+	m_winWidth = width(); //m_texture[0]->width();
+	m_winHeight = height(); //m_texture[0]->height();
+
+	m_pixelBuffer.resize(m_winWidth*m_winHeight*4);
 }
 
 void ViewerWindow::render()
@@ -327,17 +347,113 @@ void ViewerWindow::render()
 	glDisableVertexAttribArray(1);
 	glDisableVertexAttribArray(0);
 
+
 	m_program->release();
 
 	++m_frame;
 
-	// std::cout << m_frame << " ";
+	//std::cout << m_frame << " ";
+	//std::cout << width() << " " << height() << " / ";
+
+	if (!m_saved)
+	{
+		/*
+		std::vector float pixels
+		bind buffer
+		readpixels
+		save with free image
+		*/
+
+		//QString path = QFileDialog::getSaveFileName(this, tr("Save as SVG"), "", tr("SVG file (*.svg)"));
+		//painter->save();
+		m_defaultFBO = defaultFramebufferObject();
+		std::cout << "Main FBO Id: " << m_defaultFBO << std::endl;
+
+		int w = m_winWidth;
+		int h = m_winHeight;
+
+		//glBindFramebuffer(GL_READ_FRAMEBUFFER, m_defaultFBO);
+		glReadPixels(0, 0, w, h, GL_RGBA, GL_FLOAT,(GLvoid *) &(m_pixelBuffer[0]));
+
+		FIBITMAP* pBitmap;
+		pBitmap = FreeImage_AllocateT(FIT_RGBAF, w, h, /*96*/128);
+
+		unsigned int nPitch = FreeImage_GetPitch(pBitmap);
+		std::cout << "Pitch: " << nPitch << std::endl;
+		BYTE *pBits = reinterpret_cast<BYTE*>(FreeImage_GetBits(pBitmap));
+
+		for (int y = 0; y < h; ++y)
+		{
+			float *pPixel = reinterpret_cast<float*>(pBits);
+			for (int x = 0; x < w; ++x)
+			{
+				pPixel[0] = m_pixelBuffer[(y*w + x) * 4 + 0];
+				pPixel[1] = m_pixelBuffer[(y*w + x) * 4 + 1];
+				pPixel[2] = m_pixelBuffer[(y*w + x) * 4 + 2];
+				pPixel[3] = m_pixelBuffer[(y*w + x) * 4 + 3];
+				pPixel += /*3*/4;
+			}
+			pBits += nPitch;
+		}
+		//std::cout << w << " " << h << " / ";
+
+		//pixels.resize(w*h*3);
+/*
+		for (int i = 0; i < w*h; i++)
+		{
+			pixels[i * 3 + 0] = float(1); // 32 bits per channel
+			pixels[i * 3 + 1] = float(0);
+			pixels[i * 3 + 2] = float(0);
+		}
+*/		
+
+
+		// FIBITMAP* image = FreeImage_LoadFromMemory(FIF_EXR, pixels.at);
+		// BYTE mem_buffer = (BYTE)malloc(w*h*4);
+
+		// memcpy(mem_buffer, pixels, w*h * 4);
+		//FIMEMORY *hmem = FreeImage_OpenMemory(pixels, w*h * 4);
+		
+		//FIMEMORY *hmem = FreeImage_OpenMemory( reinterpret_cast<BYTE*> &(pixels[0]), w*h * 3 * sizeof(float));
+		//FIBITMAP* image = FreeImage_LoadFromMemory(FIF_EXR, hmem);
+
+		//DLL_API FIBITMAP *DLL_CALLCONV FreeImage_ConvertFromRawBits(BYTE *bits, int width, int height, int pitch, unsigned bpp, unsigned red_mask, unsigned green_mask, unsigned blue_mask, BOOL topdown FI_DEFAULT(FALSE));
+		// check: FreeImage_ConvertToRGBF()
+
+		//FIBITMAP* image = FreeImage_ConvertFromRawBits((BYTE *) &(pixels[0]), w, h, w*3*sizeof(float), 3 * sizeof(float), 0, 0, 0, 0);
+
+		// REPEAT WITH 128 bpp
+		// TRY unsigned short
+		//FREE_IMAGE_FORMAT format = FreeImage_GetFileType("E:/Dan/Projects/synthetizen/images/0000_irpv.exr", 0);
+		//FIBITMAP* image = FreeImage_Load(format, "E:/Dan/Projects/synthetizen/images/0000_irpv.exr");
+		//FIBITMAP* imageconv = FreeImage_ConvertFromRawBitsEx(true,(BYTE*) &(pixels[0]), FREE_IMAGE_TYPE::FIT_FLOAT, w, h, w*3*sizeof(float), 96, 0, 0, 0, 0);
+		//FIBITMAP* image = FreeImage_LoadFromMemory(format, hmem, 0);
+		//FIBITMAP* imageconv = FreeImage_ConvertToRGBF(image);
+
+		//std::cout << "FreeIMAGE Test-Format: " << format << std::endl;
+		
+		FreeImage_Save(FIF_SGI/*should be an EXR*/, pBitmap, "output.exr", 0);
+		
+		//std::cout << "Done" << std::endl;
+
+		// Free resources
+		FreeImage_Unload(pBitmap);
+
+		m_saved = true;
+	}
 }
 
 
 /* TODO:
-Investigar Qt para ver donde se puede llamar al guardado
-Evitar que haga render indefinidamente -> (1 render y salga ?)
+Ver donde se puede llamar al guardado
+
+
+std::vector float pixels
+bind buffer
+readpixels
+save with free image
+
+1st test the save with a red pixel vector
 */
 
 int main(int argc, char **argv)
@@ -407,18 +523,18 @@ int main(int argc, char **argv)
 		std::cout << "One or more image paths are missing." << std::endl << "Exiting application." << std::endl;
 	} else {
 
-	ViewerWindow window(backgroundPath, irpvPath, irPath, alphaPath);
+		ViewerWindow window(backgroundPath, irpvPath, irPath, alphaPath);
 
-	window.setFormat(format);
-	window.resize(640, 480);
-	window.show();
+		window.setFormat(format);
+		window.resize(640, 480);
+		window.show();
 	
-	window.setAnimating(true);
+		window.setAnimating(true);
 	
-	// Loading and composition starts now
-	return app.exec();
+		// Loading and composition starts now
+		return app.exec();
 
-	// This is after main loop
+		// This is after main loop
 	}
 
 }

@@ -69,6 +69,8 @@
 
       void setAnimating(bool animating);
 
+	  GLuint defaultFramebufferObject() const;
+
   public slots:
       void renderLater();
       void renderNow();
