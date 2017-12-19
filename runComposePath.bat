@@ -2,5 +2,6 @@
  --bg ".\images\0000_ini.png" ^
  --irpv ".\images\0000_irpv.png" ^
  --ir ".\images\0000_ir.png" ^
- --a ".\images\0000_alpha.png"
+ --a ".\images\0000_alpha.png" ^
+ --o ".\output\0000_output.exr"
  pause

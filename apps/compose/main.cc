@@ -78,7 +78,7 @@ class ViewerWindow : public OpenGLWindow
 {
 public:
 	ViewerWindow();
-	ViewerWindow(const char* backgroundPath, const char* irpvPath, const char* irPath, const char* alphaPath);
+	ViewerWindow(const char* backgroundPath, const char* irpvPath, const char* irPath, const char* alphaPath, const char* outPath);
 
 	void initialize() override;
 	void render() override;
@@ -95,6 +95,7 @@ private:
 	const char* m_irpvPath;
 	const char* m_irPath;
 	const char* m_alphaPath;
+	const char* m_outPath;
 
 	bool m_saved;
 
@@ -119,6 +120,7 @@ ViewerWindow::ViewerWindow()
 	m_irpvPath = "././././images/0000_irpv.png";
 	m_irPath = "././././images/0000_ir.png";
 	m_alphaPath = "././././images/0000_alpha.png";
+	m_outPath = "././././output/0000_output.exr";
 }
 
 
@@ -126,7 +128,8 @@ ViewerWindow::ViewerWindow
 	(const char* backgroundPath,
 	const char* irpvPath,
 	const char* irPath,
-	const char* alphaPath)
+	const char* alphaPath,
+	const char* outPath)
 	: m_program(0)
 	, m_frame(0)
 {
@@ -136,6 +139,7 @@ ViewerWindow::ViewerWindow
 	m_irpvPath = irpvPath;
 	m_irPath = irPath;
 	m_alphaPath = alphaPath;
+	m_outPath = outPath;
 }
 
 
@@ -287,7 +291,7 @@ void ViewerWindow::initialize()
 	m_texcAttr = m_program->attributeLocation("texcAttr");
 	m_matrixUniform = m_program->uniformLocation("matrix");
 
-	std::cout << "Loading Bg" << m_backgroundPath << std::endl;
+	std::cout << "Loading Bg" << std::endl;
 	loadTexture(m_backgroundPath, 0);
 	std::cout << "Loading irpv" << std::endl;
 	loadTexture(m_irpvPath, 1);
@@ -364,15 +368,14 @@ void ViewerWindow::render()
 		save with free image
 		*/
 
-		//QString path = QFileDialog::getSaveFileName(this, tr("Save as SVG"), "", tr("SVG file (*.svg)"));
-		//painter->save();
+
 		m_defaultFBO = defaultFramebufferObject();
 		std::cout << "Main FBO Id: " << m_defaultFBO << std::endl;
 
 		int w = m_winWidth;
 		int h = m_winHeight;
 
-		//glBindFramebuffer(GL_READ_FRAMEBUFFER, m_defaultFBO);
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, m_defaultFBO);
 		glReadPixels(0, 0, w, h, GL_RGBA, GL_FLOAT,(GLvoid *) &(m_pixelBuffer[0]));
 
 		FIBITMAP* pBitmap;
@@ -397,16 +400,6 @@ void ViewerWindow::render()
 		}
 		//std::cout << w << " " << h << " / ";
 
-		//pixels.resize(w*h*3);
-/*
-		for (int i = 0; i < w*h; i++)
-		{
-			pixels[i * 3 + 0] = float(1); // 32 bits per channel
-			pixels[i * 3 + 1] = float(0);
-			pixels[i * 3 + 2] = float(0);
-		}
-*/		
-
 
 		// FIBITMAP* image = FreeImage_LoadFromMemory(FIF_EXR, pixels.at);
 		// BYTE mem_buffer = (BYTE)malloc(w*h*4);
@@ -418,23 +411,19 @@ void ViewerWindow::render()
 		//FIBITMAP* image = FreeImage_LoadFromMemory(FIF_EXR, hmem);
 
 		//DLL_API FIBITMAP *DLL_CALLCONV FreeImage_ConvertFromRawBits(BYTE *bits, int width, int height, int pitch, unsigned bpp, unsigned red_mask, unsigned green_mask, unsigned blue_mask, BOOL topdown FI_DEFAULT(FALSE));
-		// check: FreeImage_ConvertToRGBF()
+
 
 		//FIBITMAP* image = FreeImage_ConvertFromRawBits((BYTE *) &(pixels[0]), w, h, w*3*sizeof(float), 3 * sizeof(float), 0, 0, 0, 0);
 
-		// REPEAT WITH 128 bpp
-		// TRY unsigned short
 		//FREE_IMAGE_FORMAT format = FreeImage_GetFileType("E:/Dan/Projects/synthetizen/images/0000_irpv.exr", 0);
 		//FIBITMAP* image = FreeImage_Load(format, "E:/Dan/Projects/synthetizen/images/0000_irpv.exr");
 		//FIBITMAP* imageconv = FreeImage_ConvertFromRawBitsEx(true,(BYTE*) &(pixels[0]), FREE_IMAGE_TYPE::FIT_FLOAT, w, h, w*3*sizeof(float), 96, 0, 0, 0, 0);
 		//FIBITMAP* image = FreeImage_LoadFromMemory(format, hmem, 0);
 		//FIBITMAP* imageconv = FreeImage_ConvertToRGBF(image);
 
-		//std::cout << "FreeIMAGE Test-Format: " << format << std::endl;
 		
-		FreeImage_Save(FIF_SGI/*should be an EXR*/, pBitmap, "output.exr", 0);
+		FreeImage_Save(FIF_SGI/*should be an EXR*/, pBitmap, m_outPath, 0);
 		
-		//std::cout << "Done" << std::endl;
 
 		// Free resources
 		FreeImage_Unload(pBitmap);
@@ -445,15 +434,6 @@ void ViewerWindow::render()
 
 
 /* TODO:
-Ver donde se puede llamar al guardado
-
-
-std::vector float pixels
-bind buffer
-readpixels
-save with free image
-
-1st test the save with a red pixel vector
 */
 
 int main(int argc, char **argv)
@@ -486,6 +466,12 @@ int main(int argc, char **argv)
 	parser.addOption(alphaOpt);
 	//std::cout << "Alpha Read" << std::endl;
 
+	QCommandLineOption outOpt("o",
+		QCoreApplication::translate("main", "Output file path"),
+		QCoreApplication::translate("main", "directory"));
+	parser.addOption(outOpt);
+	std::cout << "Output Read" << std::endl;
+
 	parser.process(app);
 
 	QString qBackgroundPath = parser.value(backgroundOpt);
@@ -508,6 +494,11 @@ int main(int argc, char **argv)
 	const char* alphaPath = strAlphaPath.c_str();
 	//std::cout << "Alpha Converted: " << alphaPath << std::endl;
 
+	QString qOutPath = parser.value(outOpt);
+	std::string strOutPath = qOutPath.toUtf8().constData();
+	const char* outPath = strOutPath.c_str();
+	std::cout << "Output Converted: " << outPath << std::endl;
+
 
 	QSurfaceFormat format;
 	format.setSamples(16);
@@ -516,14 +507,15 @@ int main(int argc, char **argv)
 		<< backgroundPath << std::endl
 		<< irpvPath << std::endl 
 		<< irPath << std::endl 
-		<< alphaPath << std::endl;
+		<< alphaPath << std::endl
+		<< outPath << std::endl;
 
-	if (strBackgroundPath.empty() || strIrpvPath.empty() || strIrPath.empty() || strAlphaPath.empty())
+	if (strBackgroundPath.empty() || strIrpvPath.empty() || strIrPath.empty() || strAlphaPath.empty() || strOutPath.empty())
 	{
 		std::cout << "One or more image paths are missing." << std::endl << "Exiting application." << std::endl;
 	} else {
 
-		ViewerWindow window(backgroundPath, irpvPath, irPath, alphaPath);
+		ViewerWindow window(backgroundPath, irpvPath, irPath, alphaPath, outPath);
 
 		window.setFormat(format);
 		window.resize(640, 480);
