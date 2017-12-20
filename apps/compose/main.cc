@@ -78,13 +78,14 @@ class ViewerWindow : public OpenGLWindow
 {
 public:
 	ViewerWindow();
-	ViewerWindow(const char* backgroundPath, const char* irpvPath, const char* irPath, const char* alphaPath, const char* outPath);
+	ViewerWindow(const char* backgroundPath, const char* irpvPath, const char* irPath, const char* alphaPath, const char* outPath, bool autoClose);
 
 	void initialize() override;
 	void render() override;
 
 private:
 	void loadTexture(const char *filename, int slot);
+	void AdjustRatio(int w, int h);
 
 	GLuint m_posAttr;
 	GLuint m_colAttr;
@@ -98,10 +99,12 @@ private:
 	const char* m_outPath;
 
 	bool m_saved;
+	bool m_autoClose;
 
 	QOpenGLShaderProgram *m_program;	
 	QOpenGLTexture		 *m_texture[NUM_TEXTURES];
 	int m_frame;
+	float m_epsilon; // decimal tolerance for ratio semblance
 
 	unsigned int m_winWidth;
 	unsigned int m_winHeight;
@@ -115,6 +118,7 @@ ViewerWindow::ViewerWindow()
 	, m_frame(0)
 {
 	m_saved = false;
+	m_epsilon = 0.001;
 
 	m_backgroundPath = "././././images/0000_ini.png";
 	m_irpvPath = "././././images/0000_irpv.png";
@@ -129,17 +133,41 @@ ViewerWindow::ViewerWindow
 	const char* irpvPath,
 	const char* irPath,
 	const char* alphaPath,
-	const char* outPath)
+	const char* outPath,
+	bool autoClose)
 	: m_program(0)
 	, m_frame(0)
 {
 	m_saved = false;
+	m_epsilon = 0.001;
 
 	m_backgroundPath = backgroundPath;
 	m_irpvPath = irpvPath;
 	m_irPath = irPath;
 	m_alphaPath = alphaPath;
 	m_outPath = outPath;
+	m_autoClose = autoClose;
+}
+
+void ViewerWindow::AdjustRatio(int w, int h)
+{
+	float targetRatio = float(w) / float(h);
+	resize(w, h);
+	bool correct;
+	correct = fabs(targetRatio - (float(width()) / float(height()))) < m_epsilon;
+	while (!correct)
+	{
+		w = (9 * w) / 10;
+		h = (9 * h) / 10;
+		resize(w, h);
+		correct = fabs(targetRatio - (float(width())/float(height()))) < m_epsilon;
+		// std::cout << correct << std::endl;
+	}
+
+
+	m_winWidth = width();
+	m_winHeight = height();
+
 }
 
 
@@ -154,6 +182,15 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 		// simple case with png texture supported by QImage
 		//m_texture = new QOpenGLTexture(QImage(QString(":/images/andromeda.png")).mirrored());
 		m_texture[slot] = new QOpenGLTexture(QImage(filename).mirrored());
+
+		if (slot == 0)
+		{
+			m_winWidth = m_texture[slot]->width();
+			m_winHeight = m_texture[slot]->height();
+			std::cout << "Size at load " << m_winWidth << " " << m_winHeight << std::endl;
+
+			AdjustRatio(m_winWidth, m_winHeight);
+		}
 	}
 	else {
 		// find the buffer format
@@ -165,6 +202,17 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 		int w = FreeImage_GetWidth(image);
 		int h = FreeImage_GetHeight(image);
 		std::cout << "The size of the image is: " << "(" << format << ")" << w << " * " << h << std::endl; //Some debugging code
+
+		if (slot == 0)
+		{
+			m_winWidth = w;
+			m_winHeight = h;
+			std::cout << "Size at load " << m_winWidth << " " << m_winHeight << std::endl;
+
+			AdjustRatio(w, h);
+
+		}
+
 
 		// standard bitmap type																												
 		WORD bpp = FreeImage_GetBPP(image);
@@ -291,6 +339,10 @@ void ViewerWindow::initialize()
 	m_texcAttr = m_program->attributeLocation("texcAttr");
 	m_matrixUniform = m_program->uniformLocation("matrix");
 
+	// These are the window's original sizes
+	m_winWidth = width(); //m_texture[0]->width();
+	m_winHeight = height(); //m_texture[0]->height();
+
 	std::cout << "Loading Bg" << std::endl;
 	loadTexture(m_backgroundPath, 0);
 	std::cout << "Loading irpv" << std::endl;
@@ -301,9 +353,8 @@ void ViewerWindow::initialize()
 	loadTexture(m_alphaPath, 3);
 
 	m_defaultFBO = GLuint(0);
-
-	m_winWidth = width(); //m_texture[0]->width();
-	m_winHeight = height(); //m_texture[0]->height();
+	
+	std::cout << "Size at init " << m_winWidth << " " << m_winHeight << std::endl;
 
 	m_pixelBuffer.resize(m_winWidth*m_winHeight*4);
 }
@@ -361,6 +412,8 @@ void ViewerWindow::render()
 
 	if (!m_saved)
 	{
+		//AdjustRatio(m_winWidth, m_winHeight);
+		std::cout << " - Saving - " << std::endl;
 		/*
 		std::vector float pixels
 		bind buffer
@@ -429,11 +482,14 @@ void ViewerWindow::render()
 		FreeImage_Unload(pBitmap);
 
 		m_saved = true;
+		
+		if(m_autoClose) close();
 	}
 }
 
 
 /* TODO:
+Window size
 */
 
 int main(int argc, char **argv)
@@ -441,6 +497,9 @@ int main(int argc, char **argv)
 	QGuiApplication app(argc, argv);
 
 	QCommandLineParser parser;
+
+	QCommandLineOption autoCloseOption("ac", QCoreApplication::translate("main", "Auto-close after render and save"));
+	parser.addOption(autoCloseOption);
 
 	QCommandLineOption backgroundOpt("bg",
 		QCoreApplication::translate("main", "Background of the composition"),
@@ -473,6 +532,8 @@ int main(int argc, char **argv)
 	std::cout << "Output Read" << std::endl;
 
 	parser.process(app);
+
+	bool autoClose = parser.isSet(autoCloseOption);
 
 	QString qBackgroundPath = parser.value(backgroundOpt);
 	std::string strBackgroundPath = qBackgroundPath.toUtf8().constData();
@@ -515,7 +576,7 @@ int main(int argc, char **argv)
 		std::cout << "One or more image paths are missing." << std::endl << "Exiting application." << std::endl;
 	} else {
 
-		ViewerWindow window(backgroundPath, irpvPath, irPath, alphaPath, outPath);
+		ViewerWindow window(backgroundPath, irpvPath, irPath, alphaPath, outPath, autoClose);
 
 		window.setFormat(format);
 		window.resize(640, 480);
