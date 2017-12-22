@@ -571,7 +571,7 @@ int main(int argc, char **argv)
 		<< alphaPath << std::endl
 		<< outPath << std::endl;
 
-	if (strBackgroundPath.empty() || strIrpvPath.empty() || strIrPath.empty() || strAlphaPath.empty() || strOutPath.empty())
+	if (strBackgroundPath.empty() || strIrpvPath.empty() || strIrPath.empty() || strAlphaPath.empty())
 	{
 		std::cout << "One or more image paths are missing." << std::endl << "Exiting application." << std::endl;
 	} else {
