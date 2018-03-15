@@ -28,5 +28,8 @@ void main()
    
    //gl_FragColor = 0.75*rgb_color + 0.25*ss_color;
    
-   gl_FragColor = alpha*full_render + (1-alpha)*(rgb_color + full_render - surface);   
+   
+   // final = alpha * Irpv + (1-alpha) * (R + Irpv - Ir)
+   gl_FragColor = alpha*full_render + (1.0-alpha)*(rgb_color + full_render - surface);
+   
 }
