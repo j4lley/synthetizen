@@ -120,11 +120,13 @@ ViewerWindow::ViewerWindow()
 	m_saved = false;
 	m_epsilon = 0.001;
 
-	m_backgroundPath = "././././images/0000_ini.png";
-	m_irpvPath = "././././images/0000_irpv.png";
-	m_irPath = "././././images/0000_ir.png";
-	m_alphaPath = "././././images/0000_alpha.png";
-	m_outPath = "././././output/0000_output.exr";
+	// DO NOT PLEASE EVER CHANGE THIS TO AN ABSOLUTE PATH !!!
+	m_backgroundPath = "../../../resources/images/0000_ini.png";
+	m_irpvPath = "../../../resources/images/0000_irpv.png";
+	m_irPath = "../../../resources/images/0000_ir.png";
+	m_alphaPath = "../../../resources/images/0000_alpha.png";
+	m_outPath = "../../../resources/output/0000_output.exr";
+	// DO NOT PLEASE EVER CHANGE THIS TO AN ABSOLUTE PATH !!!
 }
 
 
@@ -473,10 +475,8 @@ void ViewerWindow::render()
 		//FIBITMAP* imageconv = FreeImage_ConvertFromRawBitsEx(true,(BYTE*) &(pixels[0]), FREE_IMAGE_TYPE::FIT_FLOAT, w, h, w*3*sizeof(float), 96, 0, 0, 0, 0);
 		//FIBITMAP* image = FreeImage_LoadFromMemory(format, hmem, 0);
 		//FIBITMAP* imageconv = FreeImage_ConvertToRGBF(image);
-
 		
-		FreeImage_Save(FIF_SGI/*should be an EXR*/, pBitmap, m_outPath, 0);
-		
+		FreeImage_Save(FIF_SGI/*should be an EXR*/, pBitmap, m_outPath, 0);	
 
 		// Free resources
 		FreeImage_Unload(pBitmap);
@@ -538,22 +538,22 @@ int main(int argc, char **argv)
 	QString qBackgroundPath = parser.value(backgroundOpt);
 	std::string strBackgroundPath = qBackgroundPath.toUtf8().constData();
 	const char* backgroundPath = strBackgroundPath.c_str();
-	//std::cout << "BG Converted: " << backgroundPath << std::endl;
+	std::cout << "BG Converted: " << backgroundPath << std::endl;
 
 	QString qIrpvPath = parser.value(irpvOpt);
 	std::string strIrpvPath = qIrpvPath.toUtf8().constData();
 	const char* irpvPath = strIrpvPath.c_str();
-	//std::cout << "Irpv Converted: " << irpvPath << std::endl;
+	std::cout << "Irpv Converted: " << irpvPath << std::endl;
 
 	QString qIrPath = parser.value(irOpt);
 	std::string strIrPath = qIrPath.toUtf8().constData();
 	const char* irPath = strIrPath.c_str();
-	//std::cout << "Ir Converted: " << irPath << std::endl;
+	std::cout << "Ir Converted: " << irPath << std::endl;
 
 	QString qAlphaPath = parser.value(alphaOpt);
 	std::string strAlphaPath = qAlphaPath.toUtf8().constData();
 	const char* alphaPath = strAlphaPath.c_str();
-	//std::cout << "Alpha Converted: " << alphaPath << std::endl;
+	std::cout << "Alpha Converted: " << alphaPath << std::endl;
 
 	QString qOutPath = parser.value(outOpt);
 	std::string strOutPath = qOutPath.toUtf8().constData();
@@ -575,8 +575,10 @@ int main(int argc, char **argv)
 	{
 		std::cout << "One or more image paths are missing." << std::endl << "Exiting application." << std::endl;
 	} else {
-
+		
 		ViewerWindow window(backgroundPath, irpvPath, irPath, alphaPath, outPath, autoClose);
+		//ViewerWindow window;
+		//window.initialize();
 
 		window.setFormat(format);
 		window.resize(640, 480);

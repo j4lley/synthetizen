@@ -97,12 +97,11 @@ ViewerWindow::ViewerWindow()
 	: m_program(0)
 	, m_frame(0)
 {
-	//m_tex_path = "././././resources/images/frame_rgb.exr";
-	//m_tex_A_path = "././././resources/images/frame_depth.exr";
-	//m_tex_B_path = "././././resources/images/frame_ss.png";
-	m_tex_path = "E:/Dan/Projects/synthetizen/resources/images/frame_rgb.exr";
-	m_tex_A_path = "E:/Dan/Projects/synthetizen/resources/images/frame_depth.exr";
-	m_tex_B_path = "E:/Dan/Projects/synthetizen/resources/images/frame_ss.png";
+	// DO NOT PLEASE EVER CHANGE THIS TO AN ABSOLUTE PATH !!!
+	m_tex_path = "../../../resources/images/frame_rgb.exr";
+	m_tex_A_path = "../../../resources/images/frame_depth.exr";
+	m_tex_B_path = "../../../resources/images/frame_ss.png";
+	// DO NOT PLEASE EVER CHANGE THIS TO AN ABSOLUTE PATH !!!
 }
 
 ViewerWindow::ViewerWindow
