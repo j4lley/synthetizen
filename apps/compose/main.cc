@@ -525,6 +525,7 @@ int main(int argc, char **argv)
 	parser.addOption(alphaOpt);
 	//std::cout << "Alpha Read" << std::endl;
 
+	// Should be always an EXR file right now !!!
 	QCommandLineOption outOpt("o",
 		QCoreApplication::translate("main", "Output file path"),
 		QCoreApplication::translate("main", "directory"));

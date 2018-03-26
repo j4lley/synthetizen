@@ -39,6 +39,6 @@ include_directories("${CMAKE_SOURCE_DIR}/src")
 
 # Use the Widgets and OpenGL modules from Qt 5.
 qt5_use_modules(synthetizen_compose Widgets OpenGL)
-target_link_libraries(synthetizen_compose synthetizen_graphics ${QT_LIBRARIES} ${OPENGL_LIBRARIES})
+target_link_libraries(synthetizen_compose synthetizen_graphics ${QT_LIBRARIES} ${OPENGL_LIBRARIES} ${FREEIMAGE_LIBRARY})
     
 endif (NOT TARGET ${PROJECT_NAME})
