@@ -261,7 +261,9 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 		}
 		m_texture[slot]->setFormat(pxintformat); // internal format
 		m_texture[slot]->allocateStorage(pxformat, pxtype); // format & type
-
+		// Avoid texture blurring ...
+		m_texture[slot]->setMinificationFilter(QOpenGLTexture::Filter::Nearest);
+		m_texture[slot]->setMagnificationFilter(QOpenGLTexture::Filter::Nearest);
 		// Saves EXR image with same formato
 		// FreeImage_Save(format, image, "output.exr", 0);
 
@@ -324,10 +326,10 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 	}
 
 	m_program->bind();
-	m_program->setUniformValue("texture", 0);
-	m_program->setUniformValue("IRPV", 1);
-	m_program->setUniformValue("IR", 2);
-	m_program->setUniformValue("Alpha", 3);
+	m_program->setUniformValue("tex_background", 0);
+	m_program->setUniformValue("tex_irpv", 1);
+	m_program->setUniformValue("tex_ir", 2);
+	m_program->setUniformValue("tex_alpha", 3);
 }
 
 void ViewerWindow::initialize()
@@ -476,7 +478,8 @@ void ViewerWindow::render()
 		//FIBITMAP* image = FreeImage_LoadFromMemory(format, hmem, 0);
 		//FIBITMAP* imageconv = FreeImage_ConvertToRGBF(image);
 		
-		FreeImage_Save(FIF_SGI/*should be an EXR*/, pBitmap, m_outPath, 0);	
+		// Windows FreeImage.dll should use FIF_EXR
+		FreeImage_Save(FIF_EXR/*SGI*//*should be an EXR*/, pBitmap, m_outPath, 0);	
 
 		// Free resources
 		FreeImage_Unload(pBitmap);
@@ -544,7 +547,7 @@ int main(int argc, char **argv)
 	QString qIrpvPath = parser.value(irpvOpt);
 	std::string strIrpvPath = qIrpvPath.toUtf8().constData();
 	const char* irpvPath = strIrpvPath.c_str();
-	std::cout << "Irpv Converted: " << irpvPath << std::endl;
+	std::cout << "Irpv Converted: " << irpvPath << " opt = " << qIrpvPath.toStdString().c_str() << std::endl;
 
 	QString qIrPath = parser.value(irOpt);
 	std::string strIrPath = qIrPath.toUtf8().constData();
