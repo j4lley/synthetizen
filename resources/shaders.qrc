@@ -4,5 +4,6 @@
 	<file alias="default.fp">shaders/default.fp</file>
     <file alias="texture.fp">shaders/texture.fp</file>
 	<file alias="differential_rendering.fp">shaders/differential_rendering.fp</file>
+  <file alias="composer_differential_rendering.fp">shaders/composer_differential_rendering.fp</file>
 </qresource>
 </RCC>
