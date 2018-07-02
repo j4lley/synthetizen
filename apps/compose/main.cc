@@ -78,13 +78,13 @@ class ViewerWindow : public OpenGLWindow
 {
 public:
 	ViewerWindow();
-	ViewerWindow(const char* backgroundPath, const char* irpvPath, const char* irPath, const char* alphaPath, const char* outPath, bool autoClose);
+	ViewerWindow(const char* backgroundPath, const char* irpvPath, const char* irPath, const char* alphaPath, const char* outPath, bool autoClose, bool isSemantic);
 
 	void initialize() override;
 	void render() override;
 
 private:
-	void loadTexture(const char *filename, int slot);
+	void loadTexture(const char *filename, int slot, bool a32 = false);
 	void AdjustRatio(int w, int h);
 
 	GLuint m_posAttr;
@@ -100,6 +100,7 @@ private:
 
 	bool m_saved;
 	bool m_autoClose;
+	bool m_isSemantic;
 
 	QOpenGLShaderProgram *m_program;	
 	QOpenGLTexture		 *m_texture[NUM_TEXTURES];
@@ -120,13 +121,13 @@ ViewerWindow::ViewerWindow()
 	m_saved = false;
 	m_epsilon = 0.001;
 
-	// DO NOT PLEASE EVER CHANGE THIS TO AN ABSOLUTE PATH !!!
+	// PLEASE DO NOT EVER CHANGE THIS TO AN ABSOLUTE PATH !!!
 	m_backgroundPath = "../../../resources/images/0000_ini.png";
 	m_irpvPath = "../../../resources/images/0000_irpv.png";
 	m_irPath = "../../../resources/images/0000_ir.png";
 	m_alphaPath = "../../../resources/images/0000_alpha.png";
 	m_outPath = "../../../resources/output/0000_output.exr";
-	// DO NOT PLEASE EVER CHANGE THIS TO AN ABSOLUTE PATH !!!
+	// PLEASE DO NOT EVER CHANGE THIS TO AN ABSOLUTE PATH !!!
 }
 
 
@@ -136,7 +137,8 @@ ViewerWindow::ViewerWindow
 	const char* irPath,
 	const char* alphaPath,
 	const char* outPath,
-	bool autoClose)
+	bool autoClose,
+	bool isSemantic)
 	: m_program(0)
 	, m_frame(0)
 {
@@ -149,6 +151,7 @@ ViewerWindow::ViewerWindow
 	m_alphaPath = alphaPath;
 	m_outPath = outPath;
 	m_autoClose = autoClose;
+	m_isSemantic = isSemantic;
 }
 
 void ViewerWindow::AdjustRatio(int w, int h)
@@ -156,14 +159,13 @@ void ViewerWindow::AdjustRatio(int w, int h)
 	float targetRatio = float(w) / float(h);
 	resize(w, h);
 	bool correct;
-	correct = fabs(targetRatio - (float(width()) / float(height()))) < m_epsilon;
+	correct = fabs(targetRatio - ( float(width()) / float(height()) )) < m_epsilon;
 	while (!correct)
 	{
 		w = (9 * w) / 10;
 		h = (9 * h) / 10;
 		resize(w, h);
 		correct = fabs(targetRatio - (float(width())/float(height()))) < m_epsilon;
-		// std::cout << correct << std::endl;
 	}
 
 
@@ -173,16 +175,15 @@ void ViewerWindow::AdjustRatio(int w, int h)
 }
 
 
-void ViewerWindow::loadTexture(const char *filename, int slot)
+void ViewerWindow::loadTexture(const char *filename, int slot, bool alpha32)
 {
-	FREE_IMAGE_FORMAT format = FreeImage_GetFileType(filename, 0);//Automatocally detects the format(from over 20 formats!)
+	FREE_IMAGE_FORMAT format = FreeImage_GetFileType(filename, 0); //Automatocally detects the format(from over 20 formats!)
 	bool isEXR = ((format == FIF_SGI/*Octane EXR*/) || (format == FIF_EXR));
-	//std::cout << "The image format is: " << format << std::endl;
+	if (alpha32) std::cout << "The image format is: " << format << std::endl;
 
 	if (!isEXR)
 	{
 		// simple case with png texture supported by QImage
-		//m_texture = new QOpenGLTexture(QImage(QString(":/images/andromeda.png")).mirrored());
 		m_texture[slot] = new QOpenGLTexture(QImage(filename).mirrored());
 
 		if (slot == 0)
@@ -196,7 +197,6 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 	}
 	else {
 		// find the buffer format
-		//FREE_IMAGE_FORMAT format = FreeImage_GetFileType(filename, 0);//Automatocally detects the format(from over 20 formats!)
 		FIBITMAP* image = FreeImage_Load(format, filename);
 
 		// translate from FreeImage to QImage:
@@ -218,7 +218,7 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 
 		// standard bitmap type																												
 		WORD bpp = FreeImage_GetBPP(image);
-		std::cout << "The image is BPP: " << bpp << std::endl;
+		std::cout << "The image is BPP: " << bpp << " alpha32? " << alpha32 << std::endl;
 
 		m_texture[slot] = new QOpenGLTexture(QOpenGLTexture::Target2D);
 		m_texture[slot]->setSize(w, h);
@@ -241,9 +241,10 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 				pxtype = QOpenGLTexture::PixelType::Float32;
 			} break;
 			case(32):
-			{ 		// Depth
+			{ 
+				// Depth
 				pxintformat = QOpenGLTexture::TextureFormat::RGBA16_UNorm;
-				pxformat = QOpenGLTexture::PixelFormat::Luminance;
+				pxformat = QOpenGLTexture::PixelFormat::Depth;
 				pxtype = QOpenGLTexture::PixelType::Float32;
 			} break;
 			case(24):
@@ -264,47 +265,20 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 		// Avoid texture blurring ...
 		m_texture[slot]->setMinificationFilter(QOpenGLTexture::Filter::Nearest);
 		m_texture[slot]->setMagnificationFilter(QOpenGLTexture::Filter::Nearest);
-		// Saves EXR image with same formato
-		// FreeImage_Save(format, image, "output.exr", 0);
 
-		//GLubyte* texture = new GLubyte[4 * w*h];
-		//char* pixels = (char*)FreeImage_GetBits(imagen);
 
-		//GLfloat* texture = new GLfloat[3 * w*h];
 		GLfloat* texture = new GLfloat[4 * w*h];
 		GLfloat* depth; if (bpp == 32) depth = new GLfloat[w*h];
 
-		//GLubyte* texture = new GLubyte[3 * w*h];
-
-		/*
-		FIBITMAP* tonemapped_image = FreeImage_TmoDrago03(image, 2.2f, 0.f);
-		w = FreeImage_GetWidth(tonemapped_image);
-		h = FreeImage_GetHeight(tonemapped_image);
-		bpp = FreeImage_GetBPP(tonemapped_image);
-		std::cout << "The tonemapped_image is BPP: " << bpp << std::endl;
-		std::cout << "The size of the tonemapped_image is: " << "(" << format << ")" << w << " * " << h << std::endl; //Some debugging code
-		*/
 
 		GLfloat* pixels = (GLfloat*)FreeImage_GetBits(image);
-		//char* pixels = (char*)FreeImage_GetBits(tonemapped_image);
 
 		//FreeImage loads in BGR format, so you need to swap some bytes(Or use GL_BGR).
-		//std::cout << "The uchar image starts ... : " << pixeles[0] << std::endl; //Some debugging code
 
 		for (size_t j = 0; j < w*h; j++)
 		{
-			//		std::cout << "j = " << j << std::endl;
-	/*
-			texture[j * 4 + 0] = pixels[j * 3 + 2]; // GLubyte(255);
-			texture[j * 4 + 1] = pixels[j * 3 + 1]; // GLubyte(0);
-			texture[j * 4 + 2] = pixels[j * 3 + 0]; // GLubyte(0);
-			texture[j * 4 + 3] = 0; 			    // GLubyte(255);
-	*/
-			if (bpp != 32) {
-				/*texture[j * 3 + 0] = pixels[j * 3 + 0];
-				texture[j * 3 + 1] = pixels[j * 3 + 1];
-				texture[j * 3 + 2] = pixels[j * 3 + 2];*/
 
+			if (bpp != 32) {
 
 				texture[j * 4 + 0] = pixels[j * 4 + 0];
 				texture[j * 4 + 1] = pixels[j * 4 + 1];
@@ -314,15 +288,9 @@ void ViewerWindow::loadTexture(const char *filename, int slot)
 			else {
 				depth[j] = pixels[j];
 			}
-			//		texture[j * 4 + 3] = 1.f;
-
-			//		std::cout<< j <<": "<<(int)textura[j*4+0]
-			//					  <<"**"<<(int)textura[j*4+1]
-			//					  <<"**"<<(int)textura[j*4+2]
-			//					  <<"**"<<(int)textura[j*4+3]<<std::endl;
 		}
 
-		m_texture[slot]->setData(pxformat, pxtype, (GLvoid*) (bpp != 32) ? texture : depth);
+		m_texture[slot]->setData(pxformat, pxtype, (GLvoid*) (bpp != 32) ? texture : depth);		
 	}
 
 	m_program->bind();
@@ -336,10 +304,12 @@ void ViewerWindow::initialize()
 {
 	m_program = new QOpenGLShaderProgram(this);
 	m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/default.vp");
-	m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/differential_rendering.fp");
+	if(!m_isSemantic)
+		m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/differential_rendering.fp");
+	else
+		m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/semantic_composition.fp");
 	m_program->link();
 	m_posAttr = m_program->attributeLocation("posAttr");
-//	m_colAttr = m_program->attributeLocation("colAttr");
 	m_texcAttr = m_program->attributeLocation("texcAttr");
 	m_matrixUniform = m_program->uniformLocation("matrix");
 
@@ -354,7 +324,7 @@ void ViewerWindow::initialize()
 	std::cout << "Loading ir" << std::endl;
 	loadTexture(m_irPath, 2);
 	std::cout << "Loading Alpha" << std::endl;
-	loadTexture(m_alphaPath, 3);
+	loadTexture(m_alphaPath, 3, true /*alpha is 32 bpp?*/);
 
 	m_defaultFBO = GLuint(0);
 	
@@ -411,19 +381,10 @@ void ViewerWindow::render()
 
 	++m_frame;
 
-	//std::cout << m_frame << " ";
-	//std::cout << width() << " " << height() << " / ";
 
 	if (!m_saved)
 	{
-		//AdjustRatio(m_winWidth, m_winHeight);
 		std::cout << " - Saving - " << std::endl;
-		/*
-		std::vector float pixels
-		bind buffer
-		readpixels
-		save with free image
-		*/
 
 
 		m_defaultFBO = defaultFramebufferObject();
@@ -455,31 +416,11 @@ void ViewerWindow::render()
 			}
 			pBits += nPitch;
 		}
-		//std::cout << w << " " << h << " / ";
 
 
-		// FIBITMAP* image = FreeImage_LoadFromMemory(FIF_EXR, pixels.at);
-		// BYTE mem_buffer = (BYTE)malloc(w*h*4);
-
-		// memcpy(mem_buffer, pixels, w*h * 4);
-		//FIMEMORY *hmem = FreeImage_OpenMemory(pixels, w*h * 4);
-		
-		//FIMEMORY *hmem = FreeImage_OpenMemory( reinterpret_cast<BYTE*> &(pixels[0]), w*h * 3 * sizeof(float));
-		//FIBITMAP* image = FreeImage_LoadFromMemory(FIF_EXR, hmem);
-
-		//DLL_API FIBITMAP *DLL_CALLCONV FreeImage_ConvertFromRawBits(BYTE *bits, int width, int height, int pitch, unsigned bpp, unsigned red_mask, unsigned green_mask, unsigned blue_mask, BOOL topdown FI_DEFAULT(FALSE));
-
-
-		//FIBITMAP* image = FreeImage_ConvertFromRawBits((BYTE *) &(pixels[0]), w, h, w*3*sizeof(float), 3 * sizeof(float), 0, 0, 0, 0);
-
-		//FREE_IMAGE_FORMAT format = FreeImage_GetFileType("E:/Dan/Projects/synthetizen/images/0000_irpv.exr", 0);
-		//FIBITMAP* image = FreeImage_Load(format, "E:/Dan/Projects/synthetizen/images/0000_irpv.exr");
-		//FIBITMAP* imageconv = FreeImage_ConvertFromRawBitsEx(true,(BYTE*) &(pixels[0]), FREE_IMAGE_TYPE::FIT_FLOAT, w, h, w*3*sizeof(float), 96, 0, 0, 0, 0);
-		//FIBITMAP* image = FreeImage_LoadFromMemory(format, hmem, 0);
-		//FIBITMAP* imageconv = FreeImage_ConvertToRGBF(image);
-		
-		// Windows FreeImage.dll should use FIF_EXR
-		FreeImage_Save(FIF_EXR/*SGI*//*should be an EXR*/, pBitmap, m_outPath, 0);	
+		FreeImage_Save(FIF_SGI/*SGI*//*should be an EXR*/, pBitmap, m_outPath, 0);
+		std::cout << m_outPath << std::endl;
+		std::cout << " - Saved - " << std::endl;
 
 		// Free resources
 		FreeImage_Unload(pBitmap);
@@ -491,9 +432,6 @@ void ViewerWindow::render()
 }
 
 
-/* TODO:
-Window size
-*/
 
 int main(int argc, char **argv)
 {
@@ -503,6 +441,9 @@ int main(int argc, char **argv)
 
 	QCommandLineOption autoCloseOption("ac", QCoreApplication::translate("main", "Auto-close after render and save"));
 	parser.addOption(autoCloseOption);
+
+	QCommandLineOption semanticOption("s", QCoreApplication::translate("main", "Semantic ground truth of virtual object"));
+	parser.addOption(semanticOption);
 
 	QCommandLineOption backgroundOpt("bg",
 		QCoreApplication::translate("main", "Background of the composition"),
@@ -538,6 +479,7 @@ int main(int argc, char **argv)
 	parser.process(app);
 
 	bool autoClose = parser.isSet(autoCloseOption);
+	bool isSemantic = parser.isSet(semanticOption);
 
 	QString qBackgroundPath = parser.value(backgroundOpt);
 	std::string strBackgroundPath = qBackgroundPath.toUtf8().constData();
@@ -548,7 +490,7 @@ int main(int argc, char **argv)
 	std::string strIrpvPath = qIrpvPath.toUtf8().constData();
 	const char* irpvPath = strIrpvPath.c_str();
 	std::cout << "Irpv Converted: " << irpvPath << " opt = " << qIrpvPath.toStdString().c_str() << std::endl;
-
+	
 	QString qIrPath = parser.value(irOpt);
 	std::string strIrPath = qIrPath.toUtf8().constData();
 	const char* irPath = strIrPath.c_str();
@@ -568,21 +510,29 @@ int main(int argc, char **argv)
 	QSurfaceFormat format;
 	format.setSamples(16);
 
-	std::cout << "Creating composition with paths: " << std::endl 
+	if (!isSemantic)
+		std::cout << "Creating composition with paths: " << std::endl
+			<< backgroundPath << std::endl
+			<< irpvPath << std::endl
+			<< irPath << std::endl
+			<< alphaPath << std::endl
+			<< outPath << std::endl;
+	else
+		std::cout << "Creating semantic composition with paths: " << std::endl
 		<< backgroundPath << std::endl
-		<< irpvPath << std::endl 
-		<< irPath << std::endl 
+		<< irpvPath << std::endl
+		<< irPath << std::endl
 		<< alphaPath << std::endl
 		<< outPath << std::endl;
 
 	if (strBackgroundPath.empty() || strIrpvPath.empty() || strIrPath.empty() || strAlphaPath.empty())
 	{
 		std::cout << "One or more image paths are missing." << std::endl << "Exiting application." << std::endl;
-	} else {
+	} else { 
 		
-		ViewerWindow window(backgroundPath, irpvPath, irPath, alphaPath, outPath, autoClose);
-		//ViewerWindow window;
-		//window.initialize();
+
+		ViewerWindow window(backgroundPath, irpvPath, irPath, alphaPath, outPath, autoClose, isSemantic);
+
 
 		window.setFormat(format);
 		window.resize(640, 480);

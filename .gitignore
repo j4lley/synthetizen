@@ -3,3 +3,4 @@ build/
 Debug/
 *.png
 *.exr
+test/xavi_test_4.bat
