@@ -97,7 +97,13 @@ char * strrep(char *str, char *o_s, char *n_s)
 }
 #endif
 
-#define NUM_TEXTURES 15/*6*/
+#define BASIC_SEQ // do simple and basic compositing
+
+#ifndef BASIC_SEQ
+	#define NUM_TEXTURES 15/*6*/
+#else
+	#define NUM_TEXTURES 6
+#endif
 
 class ViewerWindow : public OpenGLWindow
 {
@@ -109,6 +115,7 @@ public:
 				 char* irpvDepthPath, 
 				 char* irPath, 
 				 char* alphaPath, 
+#ifndef BASIC_SEQ
 				 char* diffuseMapPath,
 				 char* diffuseDirectMapPath,
 				 char* diffuseIndirectMapPath,
@@ -118,6 +125,7 @@ public:
 				 char* reflectionIndirectMapPath,
 				 char* reflectionFilterMapPath,
 				 char* materialsPath,
+#endif
 				 char* outPath,
 				 bool autoClose);
 
@@ -193,6 +201,7 @@ ViewerWindow::ViewerWindow
 	char* irpvDepthPath,
 	char* irPath,
 	char* alphaPath,
+#ifndef BASIC_SEQ
 	char* diffuseMapPath,
 	char* diffuseDirectMapPath,
 	char* diffuseIndirectMapPath,
@@ -202,6 +211,7 @@ ViewerWindow::ViewerWindow
 	char* reflectionIndirectMapPath,
 	char* reflectionFilterMapPath,
 	char* materialsPath,
+#endif
 	char* outPath,
 	bool autoClose)
 	: m_program(0)
@@ -216,6 +226,7 @@ ViewerWindow::ViewerWindow
 	m_irpvDepthPath = irpvDepthPath;
 	m_irPath = irPath;
 	m_alphaPath = alphaPath;
+#ifndef BASIC_SEQ
 	m_diffuseMapPath = diffuseMapPath;
 	m_diffuseDirectMapPath = diffuseDirectMapPath;
 	m_diffuseIndirectMapPath = diffuseIndirectMapPath;
@@ -225,6 +236,7 @@ ViewerWindow::ViewerWindow
 	m_reflectionIndirectMapPath = reflectionIndirectMapPath;
 	m_reflectionFilterMapPath = reflectionFilterMapPath;
 	m_materialsPath = materialsPath;
+#endif
 	m_outPath = outPath;
 	m_autoClose = autoClose;
 }
@@ -294,7 +306,7 @@ void ViewerWindow::loadTexture(const char *filename, int slot, bool verbose)
 		}
 		// standard bitmap type																												
 		WORD bpp = FreeImage_GetBPP(image);
-		if (verbose) std::cout << "The image is BPP: " << bpp << std::endl;
+		if (verbose) std::cout << "The image " << filename << " is BPP: " << bpp << std::endl;
 
 		m_texture[slot] = new QOpenGLTexture(QOpenGLTexture::Target2D);
 		m_texture[slot]->setSize(w, h);
@@ -435,7 +447,7 @@ void ViewerWindow::loadTexture(const char *filename, int slot, bool verbose)
 	m_program->setUniformValue("tex_irpv_depth", 3);
 	m_program->setUniformValue("tex_ir", 4);
 	m_program->setUniformValue("tex_alpha", 5);
-	
+#ifndef	BASIC_SEQ
 	m_program->setUniformValue("tex_diffuse_hero", 6);
 	m_program->setUniformValue("tex_diffuse_direct_hero", 7);
 	m_program->setUniformValue("tex_diffuse_indirect_hero", 8);
@@ -447,12 +459,13 @@ void ViewerWindow::loadTexture(const char *filename, int slot, bool verbose)
 	m_program->setUniformValue("tex_reflection_filter_hero", 13);
 
 	m_program->setUniformValue("tex_materials_hero", 14);
+#endif
 }
 
 void ViewerWindow::loadAllTextures()
 {
 	std::cout << "Loading Bg" << std::endl;
-	loadTexture(m_backgroundPath, 0);
+	loadTexture(m_backgroundPath, 0, true);
 	std::cout << "Loading Bg_depth" << std::endl;
 	loadTexture(m_backgroundDepthPath, 1);
 	std::cout << "Loading irpv" << std::endl;
@@ -463,7 +476,7 @@ void ViewerWindow::loadAllTextures()
 	loadTexture(m_irPath, 4);
 	std::cout << "Loading Alpha" << std::endl;
 	loadTexture(m_alphaPath, 5);
-
+#ifndef BASIC_SEQ
 	std::cout << "Loading (Street+Hero) diffuse" << std::endl;
 	loadTexture(m_diffuseMapPath, 6);
 	std::cout << "Loading (Street+Hero) diffuse direct" << std::endl;
@@ -484,6 +497,7 @@ void ViewerWindow::loadAllTextures()
 
 	std::cout << "Loading (Street+Hero) materials" << std::endl;
 	loadTexture(m_materialsPath, 14);
+#endif
 }
 
 void ViewerWindow::updateFrameTextures()
@@ -545,7 +559,11 @@ void ViewerWindow::initialize()
 {
 	m_program = new QOpenGLShaderProgram(this);
 	m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/default.vp");
+#ifndef BASIC_SEQ
 	m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/composer_differential_rendering.fp");
+#else
+	m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/composer_differential_rendering_singleframe.fp");
+#endif
 	m_program->link();
 	m_posAttr = m_program->attributeLocation("posAttr");
 //	m_colAttr = m_program->attributeLocation("colAttr");
@@ -571,7 +589,9 @@ void ViewerWindow::render()
 	{
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		//std::cout << "Update Textures ...!\n" << std::endl;
+#ifndef BASIC_SEQ
 		updateFrameTextures();
+#endif
 	}
 
 	const qreal retinaScale = devicePixelRatio();
@@ -751,6 +771,7 @@ int main(int argc, char **argv)
 	parser.addOption(alphaOpt);
 	//std::cout << "Alpha Read" << std::endl;
 
+#ifndef BASIC_SEQ
 	QCommandLineOption diffuseOpt("diff_map",
 		QCoreApplication::translate("main", "Diffuse map of hero object"),
 		QCoreApplication::translate("main", "directory"));
@@ -797,7 +818,7 @@ int main(int argc, char **argv)
 		QCoreApplication::translate("main", "Materials of hero object"),
 		QCoreApplication::translate("main", "directory"));
 	parser.addOption(materialsOpt);
-
+#endif
 	// Should be always an EXR file right now !!!
 	QCommandLineOption outOpt("o",
 		QCoreApplication::translate("main", "Output file path"),
@@ -839,6 +860,7 @@ int main(int argc, char **argv)
 	char* alphaPath = (char*)strAlphaPath.c_str();
 	std::cout << "Alpha Converted: " << alphaPath << std::endl;
 
+#ifndef BASIC_SEQ
 	//diffuse
 	QString qDiffuseMapPath = parser.value(diffuseOpt);
 	std::string strDiffusePath = qDiffuseMapPath.toUtf8().constData();
@@ -886,7 +908,7 @@ int main(int argc, char **argv)
 	std::string strMaterialsPath = qMaterialsPath.toUtf8().constData();
 	char* materialsPath = (char*)strMaterialsPath.c_str();
 	std::cout << "materialsPath Converted: " << materialsPath << std::endl;
-
+#endif
 	QString qOutPath = parser.value(outOpt);
 	std::string strOutPath = qOutPath.toUtf8().constData();
 	char* outPath = (char*)strOutPath.c_str();
@@ -902,6 +924,7 @@ int main(int argc, char **argv)
 		<< irpvDepthPath << std::endl
 		<< irPath << std::endl 
 		<< alphaPath << std::endl
+#ifndef BASIC_SEQ
 		<< diffusePath << std::endl
 		<< diffuseDirectPath << std::endl
 		<< diffuseIndirectPath << std::endl
@@ -911,6 +934,7 @@ int main(int argc, char **argv)
 		<< reflectionIndirectPath << std::endl
 		<< reflectionFilterPath << std::endl
 		<< materialsPath << std::endl
+#endif
 		<< outPath << std::endl;
 
 	if (strBackgroundPath.empty() || strIrpvPath.empty() || strIrPath.empty() || strAlphaPath.empty())
@@ -918,16 +942,21 @@ int main(int argc, char **argv)
 		std::cout << "One or more image paths are missing." << std::endl << "Exiting application." << std::endl;
 	} else {
 		/* SINGLE FRAME EXECUTION*/		
+#ifdef BASIC_SEQ
+		ViewerWindow window(backgroundPath, backgroundDepthPath, irpvPath, irpvDepthPath, irPath, alphaPath,			
+			outPath, autoClose);
+#else
 		ViewerWindow window(backgroundPath, backgroundDepthPath, irpvPath, irpvDepthPath, irPath, alphaPath, 
 						    diffusePath, diffuseDirectPath, diffuseIndirectPath, diffuseFilterPath,
 							reflectionPath, reflectionDirectPath, reflectionIndirectPath, reflectionFilterPath,
 							materialsPath,
 							outPath, autoClose);
+#endif
 		//ViewerWindow window;
 		//window.initialize();
 
 		window.setFormat(format);
-		window.resize(640, 480);
+		window.resize(1920, 1080);
 		window.show();
 	
 		window.setAnimating(true);
