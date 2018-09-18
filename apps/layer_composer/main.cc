@@ -280,7 +280,7 @@ void ViewerWindow::loadTexture(const char *filename, int slot, bool verbose)
 			m_winHeight = m_texture[slot]->height();
 			if (verbose) std::cout << "Size at load " << m_winWidth << " " << m_winHeight << std::endl;
 
-			AdjustRatio(m_winWidth, m_winHeight);
+			// AdjustRatio(m_winWidth, m_winHeight);
 		}
 		// Avoid texture blurring ...
 		m_texture[slot]->setMinificationFilter(QOpenGLTexture::Filter::Nearest);
@@ -301,7 +301,7 @@ void ViewerWindow::loadTexture(const char *filename, int slot, bool verbose)
 			m_winHeight = h;
 			if (verbose) std::cout << "Size at load " << m_winWidth << " " << m_winHeight << std::endl;
 
-			AdjustRatio(w, h);
+			// AdjustRatio(w, h);
 
 		}
 		// standard bitmap type																												
@@ -503,26 +503,29 @@ void ViewerWindow::loadAllTextures()
 void ViewerWindow::updateFrameTextures()
 {
 	char buf[512];
-	char* data_str = "D:\\workspace\\adas\\unity\\octane\\temp\\rendersFran3\\test_sequence";
-
-	//std::cout << "\n\n Updating Bg" << std::endl;	
-	loadTexture(m_backgroundPath, 0);
+	//char* data_str = "D:\\workspace\\adas\\unity\\octane\\temp\\rendersFran3\\test_sequence";
+	char* data_str = "D:\\workspace\\adas\\audi\\audi127_test1";
+	
+	sprintf(buf, "%s\\%s\\%09d.png", data_str, "png", 12700 + (m_frame % 373));
+	std::cout << "\n\n Updating Bg" << buf << std::endl;
+	loadTexture(/*m_backgroundPath*/buf, 0);
 	//std::cout << "Loading Bg_depth" << std::endl;	
-	loadTexture(m_backgroundDepthPath, 1);
-	//std::cout << "Loading irpv" << std::endl;
-	sprintf(buf, "%s\\%s\\%s\\beauty_%04d.exr", data_str,"street_car","beauty", 1700 + (m_frame % 21));
+	//loadTexture(m_backgroundDepthPath, 1);
+	sprintf(buf, "%s\\%s\\%s\\beauty%04d.exr", data_str,"street_hero","beauty", 1 + (m_frame % 373));
+	std::cout << "Loading irpv" << buf << std::endl;
 	loadTexture(/*m_irpvPath*/buf, 2);
 	//std::cout << "Loading irpv_depth" << std::endl;
-	sprintf(buf, "%s\\%s\\%s\\depth_%04d.exr", data_str, "street_car", "depth", 1700 + (m_frame % 21));
-	loadTexture(/*m_irpvDepthPath*/buf, 3);
+	//sprintf(buf, "%s\\%s\\%s\\depth_%04d.exr", data_str, "street_car", "depth", 1700 + (m_frame % 21));
+	//loadTexture(/*m_irpvDepthPath*/buf, 3);
 	
-	//std::cout << "Loading ir" << std::endl;
-	loadTexture(m_irPath, 4);
-
-	//std::cout << "Loading Alpha: "; // << std::endl;
-	sprintf(buf, "%s\\%s\\%s\\opacity_%04d.exr", data_str, "car", "opacity", 1700 + (m_frame % 21));
+	sprintf(buf, "%s\\%s\\%s\\beauty%04d.exr", data_str, "street", "beauty", 1 + (m_frame % 373));
+	std::cout << "Loading ir" << buf << std::endl;
+	loadTexture(/*m_irPath*/buf, 4);
+	
+	sprintf(buf, "%s\\%s\\%s\\opacity%04d.exr", data_str, "hero", "opacity", 1 + (m_frame % 373));
+	std::cout << "Loading Alpha: " << buf << std::endl;
 	loadTexture(/*m_alphaPath*/buf, 5);
-
+#if 0
 	//std::cout << "Loading (Street+Hero) diffuse" << std::endl;
 	sprintf(buf, "%s\\%s\\%s\\%s\\%04d.exr", data_str, "street_car", "diffuse","all", 1700 + (m_frame % 21));
 	loadTexture(/*m_diffuseMapPath*/buf, 6);
@@ -552,6 +555,7 @@ void ViewerWindow::updateFrameTextures()
 	//std::cout << "Loading (Street+Hero) materials" << std::endl;
 	sprintf(buf, "%s\\%s\\%s\\%04d.png", data_str, "street_car", "material_id", 1700 + (m_frame % 21));
 	loadTexture(/*m_materialsPath*/buf, 14);
+#endif
 }
 
 
@@ -589,15 +593,17 @@ void ViewerWindow::render()
 	{
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		//std::cout << "Update Textures ...!\n" << std::endl;
-#ifndef BASIC_SEQ
+//#ifndef BASIC_SEQ
 		updateFrameTextures();
-#endif
+//#endif
 	}
 
-	const qreal retinaScale = devicePixelRatio();
-	glViewport(0, 0, width() * retinaScale, height() * retinaScale);
-
-	glClear(GL_COLOR_BUFFER_BIT);
+	if (m_frame == 0)
+	{
+		const qreal retinaScale = devicePixelRatio();
+		glViewport(0, 0, width() * retinaScale, height() * retinaScale);
+		glClear(GL_COLOR_BUFFER_BIT);
+	}
 
 	m_program->bind();
 
@@ -709,7 +715,7 @@ void ViewerWindow::render()
 		
 		// Windows FreeImage.dll should use FIF_EXR
 		char buf[512];
-		sprintf(buf, "%s_%04d.exr", m_outPath, 1700 + (m_frame % 21));
+		sprintf(buf, "%s_%04d.exr", m_outPath, 1 + (m_frame % 373));
 		FreeImage_Save(FIF_EXR/*SGI*//*should be an EXR*/, pBitmap, /*m_outPath*/buf, 0);	
 
 		// Free resources

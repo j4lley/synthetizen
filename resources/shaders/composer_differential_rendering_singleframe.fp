@@ -50,9 +50,9 @@ void main()
    //vec4 ss_color = texture2D(textureB, texc.st);
 	
 	vec4 background = texture2D(tex_background, texc.st);
-	vec4 background_depth = texture2D(tex_background_depth, texc.st) /*float((1 << 16) - 1)*/; // normalize using maximum representable value using 32 bits;   
+	//vec4 background_depth = texture2D(tex_background_depth, texc.st) /*float((1 << 16) - 1)*/; // normalize using maximum representable value using 32 bits;   
 	vec4 irpv = texture2D(tex_irpv, texc.st);
-	vec4 irpv_depth = texture2D(tex_irpv_depth, texc.st)/* / float((1 << 32) - 1)*/;
+	//vec4 irpv_depth = texture2D(tex_irpv_depth, texc.st)/* / float((1 << 32) - 1)*/;
 	vec4 ir = texture2D(tex_ir, texc.st);
 	/*vec4*/float alpha = texture2D(tex_alpha, texc.st);	
 	
@@ -96,10 +96,25 @@ void main()
 	//vec4 hero = (diffuse_direct_hero + diffuse_indirect_hero) + (reflection_direct_hero + reflection_indirect_hero);
 	//vec4 hero = beauty_diffuse_raw * diffuse_filter_hero + beauty_reflection_raw * reflection_filter_hero/* + (diffuse_direct_hero + diffuse_indirect_hero) + reflection_filter_hero * (reflection_direct_hero + reflection_indirect_hero)*/;				
 	
-	gl_FragColor = alpha/*.a*/*/*hero*/irpv + (1.0 - alpha/*.a*/)*(background + (irpv - ir));    // testing VZ car+streets screenshots	
+	/* DETECT EDGE NOISE BY LOOKING AT NEIGHBOUR BLACK COLOURS */
+	bool noise = false;
+	for (int i=-3; i <= 3; i++)
+	{
+		for (int j=-3; j <= 3; j++)
+		{
+			vec2 coords = texc.st + vec2(float(i)/1920.f,float(j)/1080.f);
+			vec4 col = texture2D(tex_ir, coords);
+			if ((col.x < 0.01) && (col.y < 0.01) && (col.z < 0.01)) noise = true;
+		}
+	}
+	
+	if (!noise)
+		gl_FragColor = alpha/*.a*/*/*hero*/irpv + (1.0 - alpha/*.a*/)*(background + 0.1*(irpv - ir));    // testing VZ car+streets screenshots	
+	else 
+		gl_FragColor = alpha/*.a*/*/*hero*/irpv + (1.0 - alpha/*.a*/)*(background);    // testing VZ car+streets screenshots	
 	//gl_FragColor = alpha.x*irpv + (1.0 - alpha.x)*(background + (irpv - ir));    // testing VZ car+streets screenshots
 
-//	gl_FragColor = background;
+	//gl_FragColor = ir; //background;
 	
 	// restore background if needed
 //	if (background_depth.r > irpv_depth.r)
