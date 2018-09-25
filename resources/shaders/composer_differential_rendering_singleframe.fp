@@ -6,7 +6,8 @@ uniform sampler2D tex_irpv;
 uniform sampler2D tex_irpv_depth; 
 uniform sampler2D tex_ir;
 uniform sampler2D tex_alpha;
-
+uniform sampler2D tex_beauty_hero;
+uniform sampler2D tex_mask;
 //uniform sampler2D tex_diffuse_hero;
 //uniform sampler2D tex_diffuse_direct_hero;
 //uniform sampler2D tex_diffuse_indirect_hero;
@@ -41,6 +42,14 @@ float DepthToZPosition(float depth) {
 const ivec4 hero_material_id = vec4(0, 99, 136, 255);
 const float thres = 1e-7;
 
+bool is_capo_reflection(vec4 mask)
+{
+	if ((mask.r == 0) && (mask.r == 0) && (mask.r == 0))
+		return true;
+	else 
+		return false;
+}
+
 void main() 
 {
 	//gl_FragColor = vec4(vec2(texc.st),0.0f,1.0f);
@@ -54,8 +63,9 @@ void main()
 	vec4 irpv = texture2D(tex_irpv, texc.st);
 	//vec4 irpv_depth = texture2D(tex_irpv_depth, texc.st)/* / float((1 << 32) - 1)*/;
 	vec4 ir = texture2D(tex_ir, texc.st);
-	/*vec4*/float alpha = texture2D(tex_alpha, texc.st);	
-	
+	vec4 /*float*/ alpha = texture2D(tex_alpha, texc.st);	
+	vec4 beauty_hero = texture2D(tex_beauty_hero, texc.st);	
+	vec4 mask = texture2D(tex_mask, texc.st);
 	//vec4 diffuse_hero = texture2D(tex_diffuse_hero, texc.st);	
 	//vec4 diffuse_direct_hero = texture2D(tex_diffuse_direct_hero, texc.st);	
 	//vec4 diffuse_indirect_hero = texture2D(tex_diffuse_indirect_hero, texc.st);	
@@ -107,16 +117,29 @@ void main()
 			if ((col.x < 0.01) && (col.y < 0.01) && (col.z < 0.01)) noise = true;
 		}
 	}
+
+	//gl_FragColor = (1.0 - alpha.a)* (background + 0.2*(irpv - ir));
 	
 	if (!noise)
-		gl_FragColor = alpha/*.a*/*/*hero*/irpv + (1.0 - alpha/*.a*/)*(background + 0.1*(irpv - ir));    // testing VZ car+streets screenshots	
+			gl_FragColor = alpha.a*/*hero*/beauty_hero + (1.0 - alpha.a)*(background + ((is_capo_reflection(mask)) ? (irpv - ir) : 0.2*(irpv - ir)));
+		//else
+		//	gl_FragColor = alpha.a * beauty_hero + (1.0 - alpha.a) * (background); //(background/* + (irpv - ir)*/); // we better use hero over black/transparent background so we can use alpha to weight
 	else 
-		gl_FragColor = alpha/*.a*/*/*hero*/irpv + (1.0 - alpha/*.a*/)*(background);    // testing VZ car+streets screenshots	
+		gl_FragColor = alpha.a*/*hero*/beauty_hero + (1.0 - alpha.a)*(background);    // testing VZ car+streets screenshots	
 	//gl_FragColor = alpha.x*irpv + (1.0 - alpha.x)*(background + (irpv - ir));    // testing VZ car+streets screenshots
 
-	//gl_FragColor = ir; //background;
-	
+	//if (is_capo_reflection(mask))
+	//	gl_FragColor = vec4(1,0,0,1)*background;
+	//else
+	//	gl_FragColor = background;
+
+	//if (alpha.a == 1.0f)
+	//	gl_FragColor = alpha*background; //background;
+	//else if (alpha.a == 0.f)
+	//	gl_FragColor = vec4(0,1,0,1); //background;
+	//else
+	//	gl_FragColor = vec4(1,0,0,1)*background;
 	// restore background if needed
 //	if (background_depth.r > irpv_depth.r)
-//		gl_FragColor = background;
+//	gl_FragColor = background;
 }

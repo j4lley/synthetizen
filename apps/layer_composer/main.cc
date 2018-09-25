@@ -72,6 +72,9 @@
 #include <sstream>
 #include <iomanip>
 
+#define IMG_RES_X 1920
+#define IMG_RES_Y 1208
+
 #if 0
 char * strrep(char *str, char *o_s, char *n_s)
 {
@@ -97,12 +100,15 @@ char * strrep(char *str, char *o_s, char *n_s)
 }
 #endif
 
+static unsigned int seq_length = /*1200*/32;
+static unsigned int seq_offset = /*800*/997;
+
 #define BASIC_SEQ // do simple and basic compositing
 
 #ifndef BASIC_SEQ
 	#define NUM_TEXTURES 15/*6*/
 #else
-	#define NUM_TEXTURES 6
+	#define NUM_TEXTURES 8/*6*/
 #endif
 
 class ViewerWindow : public OpenGLWindow
@@ -111,10 +117,11 @@ public:
 	ViewerWindow();
 	ViewerWindow(char* backgroundPath, 
 				 char* backgroundDepthPath, 
-				 char* irpvPath, 
+				 char* irpvPath,  
 				 char* irpvDepthPath, 
 				 char* irPath, 
 				 char* alphaPath, 
+				 char* maskPath,
 #ifndef BASIC_SEQ
 				 char* diffuseMapPath,
 				 char* diffuseDirectMapPath,
@@ -150,6 +157,8 @@ private:
 	char* m_irpvDepthPath;
 	char* m_irPath;
 	char* m_alphaPath;
+	char* m_beautyHeroPath;
+	char* m_maskPath;
 
 	char* m_diffuseMapPath;
 	char* m_diffuseDirectMapPath;
@@ -174,7 +183,7 @@ private:
 	unsigned int m_winHeight;
 
 	GLuint m_defaultFBO;
-	std::vector<float> m_pixelBuffer;
+	std::vector<uchar> m_pixelBuffer;
 };
 
 ViewerWindow::ViewerWindow()
@@ -189,6 +198,7 @@ ViewerWindow::ViewerWindow()
 	m_irpvPath = "../../../resources/images/0000_irpv.png";
 	m_irPath = "../../../resources/images/0000_ir.png";
 	m_alphaPath = "../../../resources/images/0000_alpha.png";
+	m_maskPath = "\\\\NAS-SYNTHIA\\synthia\\AUDI_AR\\car_videos\\Audi_EV_GmbH\\seq127\\2018-09-20-test_one_character\\masks\\audiCapoMask.png";
 	m_outPath = "../../../resources/output/0000_output.exr";
 	// DO NOT PLEASE EVER CHANGE THIS TO AN ABSOLUTE PATH !!!
 }
@@ -201,6 +211,7 @@ ViewerWindow::ViewerWindow
 	char* irpvDepthPath,
 	char* irPath,
 	char* alphaPath,
+	char* maskPath,
 #ifndef BASIC_SEQ
 	char* diffuseMapPath,
 	char* diffuseDirectMapPath,
@@ -226,6 +237,7 @@ ViewerWindow::ViewerWindow
 	m_irpvDepthPath = irpvDepthPath;
 	m_irPath = irPath;
 	m_alphaPath = alphaPath;
+	m_maskPath = maskPath;
 #ifndef BASIC_SEQ
 	m_diffuseMapPath = diffuseMapPath;
 	m_diffuseDirectMapPath = diffuseDirectMapPath;
@@ -321,30 +333,36 @@ void ViewerWindow::loadTexture(const char *filename, int slot, bool verbose)
 				pxintformat = QOpenGLTexture::TextureFormat::RGBA16_UNorm;
 				pxformat = QOpenGLTexture::PixelFormat::RGBA;
 				pxtype = QOpenGLTexture::PixelType::Float32;
+				if (slot == 5) printf("alpha is 128 bits\n");
 			} break;
 			case(96):
 			{			// RGB 
 				pxintformat = QOpenGLTexture::TextureFormat::RGBA16_UNorm; /*RGBA8_UNorm*/
 				pxformat = QOpenGLTexture::PixelFormat::RGB;
 				pxtype = QOpenGLTexture::PixelType::Float32;
+				if (slot == 5) printf("alpha is 96 bits\n");
 			} break;
 			case(32):
-			{ 		// Depth
-				pxintformat = QOpenGLTexture::TextureFormat::RGBA16_UNorm;
-				pxformat = QOpenGLTexture::PixelFormat::Luminance;
-				pxtype = QOpenGLTexture::PixelType::Float32;
+			{ 		
+				// Depth
+				pxintformat = QOpenGLTexture::TextureFormat::/*RGBA16_UNorm*/RGBA8U;
+				pxformat = QOpenGLTexture::PixelFormat::/*Luminance*/RGBA;
+				pxtype = QOpenGLTexture::PixelType::UInt8/*Float32*/;
+				if (slot == 5) printf("alpha is 32 bits\n");
 			} break;
 			case(24):
 			{ 		// RGB 24bit (8bit/channel)
 				pxintformat = QOpenGLTexture::TextureFormat::RGBA16_UNorm;
 				pxformat = QOpenGLTexture::PixelFormat::RGB;
 				pxtype = QOpenGLTexture::PixelType::UInt8;
+				if (slot == 5) printf("alpha is 24 bits\n");
 			} break;
 			default: // didn't solve the stuck 4th image problem // left it as failproof
 			{
 				pxintformat = QOpenGLTexture::TextureFormat::RGBA16_UNorm;
 				pxformat = QOpenGLTexture::PixelFormat::RGB;
 				pxtype = QOpenGLTexture::PixelType::Float32;
+				if (slot == 5) printf("alpha is default-32 bits\n");
 			} break;
 		}
 		m_texture[slot]->setFormat(pxintformat); // internal format
@@ -447,6 +465,8 @@ void ViewerWindow::loadTexture(const char *filename, int slot, bool verbose)
 	m_program->setUniformValue("tex_irpv_depth", 3);
 	m_program->setUniformValue("tex_ir", 4);
 	m_program->setUniformValue("tex_alpha", 5);
+	m_program->setUniformValue("tex_beauty_hero", 6);
+	m_program->setUniformValue("tex_mask", 7);
 #ifndef	BASIC_SEQ
 	m_program->setUniformValue("tex_diffuse_hero", 6);
 	m_program->setUniformValue("tex_diffuse_direct_hero", 7);
@@ -472,10 +492,13 @@ void ViewerWindow::loadAllTextures()
 	loadTexture(m_irpvPath, 2);
 	std::cout << "Loading irpv_depth" << std::endl;
 	loadTexture(m_irpvDepthPath, 3);
-	std::cout << "Loading ir" << std::endl;
+	std::cout << "Loading ir (Street)" << std::endl;
 	loadTexture(m_irPath, 4);
-	std::cout << "Loading Alpha" << std::endl;
+	std::cout << "Loading Alpha Hero" << std::endl;
 	loadTexture(m_alphaPath, 5);
+	
+	std::cout << "Loading Mask" << std::endl;
+	loadTexture(m_maskPath, 7);
 #ifndef BASIC_SEQ
 	std::cout << "Loading (Street+Hero) diffuse" << std::endl;
 	loadTexture(m_diffuseMapPath, 6);
@@ -504,27 +527,36 @@ void ViewerWindow::updateFrameTextures()
 {
 	char buf[512];
 	//char* data_str = "D:\\workspace\\adas\\unity\\octane\\temp\\rendersFran3\\test_sequence";
-	char* data_str = "D:\\workspace\\adas\\audi\\audi127_test1";
+	//char* data_str = "D:\\workspace\\adas\\audi\\audi127_test1";
+	//char* data_str = "D:\\workspace\\adas\\audi\\audi_seq127";
+	char* data_str = "\\\\NAS-SYNTHIA\\synthia\\AUDI_AR\\car_videos\\Audi_EV_GmbH\\seq127";
 	
-	sprintf(buf, "%s\\%s\\%09d.png", data_str, "png", 12700 + (m_frame % 373));
+	sprintf(buf, "%s\\%s\\%09d.png", data_str, "png", 12700 + seq_offset + (m_frame % seq_length));
 	std::cout << "\n\n Updating Bg" << buf << std::endl;
 	loadTexture(/*m_backgroundPath*/buf, 0);
 	//std::cout << "Loading Bg_depth" << std::endl;	
 	//loadTexture(m_backgroundDepthPath, 1);
-	sprintf(buf, "%s\\%s\\%s\\beauty%04d.exr", data_str,"street_hero","beauty", 1 + (m_frame % 373));
+	sprintf(buf, "%s\\%s\\%s\\%s\\beauty_%04d.exr", data_str, "2018-09-20-test_one_character\\layers","street_hero","beauty", seq_offset + (m_frame % seq_length));
 	std::cout << "Loading irpv" << buf << std::endl;
 	loadTexture(/*m_irpvPath*/buf, 2);
 	//std::cout << "Loading irpv_depth" << std::endl;
 	//sprintf(buf, "%s\\%s\\%s\\depth_%04d.exr", data_str, "street_car", "depth", 1700 + (m_frame % 21));
 	//loadTexture(/*m_irpvDepthPath*/buf, 3);
 	
-	sprintf(buf, "%s\\%s\\%s\\beauty%04d.exr", data_str, "street", "beauty", 1 + (m_frame % 373));
+	sprintf(buf, "%s\\%s\\%s\\%s\\beauty_%04d.exr", data_str, "2018-09-20-test_one_character\\layers", "street", "beauty", seq_offset + (m_frame % seq_length));
 	std::cout << "Loading ir" << buf << std::endl;
 	loadTexture(/*m_irPath*/buf, 4);
 	
-	sprintf(buf, "%s\\%s\\%s\\opacity%04d.exr", data_str, "hero", "opacity", 1 + (m_frame % 373));
+	sprintf(buf, "%s\\%s\\%s\\%s\\opacity_%04d.png", data_str, "2018-09-20-test_one_character\\layers", "hero", "opacity", seq_offset + (m_frame % seq_length));
 	std::cout << "Loading Alpha: " << buf << std::endl;
 	loadTexture(/*m_alphaPath*/buf, 5);
+	
+	sprintf(buf, "%s\\%s\\%s\\%s\\beauty_%04d.exr", data_str, "2018-09-20-test_one_character\\layers", "hero", "beauty", seq_offset + (m_frame % seq_length));
+	std::cout << "Loading Hero Beauty: " << buf << std::endl;
+	loadTexture(/*m_alphaPath*/buf, 6);
+
+	std::cout << "Loading Mask " << m_maskPath << std::endl;
+	loadTexture(m_maskPath, 7);
 #if 0
 	//std::cout << "Loading (Street+Hero) diffuse" << std::endl;
 	sprintf(buf, "%s\\%s\\%s\\%s\\%04d.exr", data_str, "street_car", "diffuse","all", 1700 + (m_frame % 21));
@@ -584,7 +616,8 @@ void ViewerWindow::initialize()
 	
 	std::cout << "Size at init " << m_winWidth << " " << m_winHeight << std::endl;
 
-	m_pixelBuffer.resize(m_winWidth*m_winHeight*4);
+	//m_pixelBuffer.resize(m_winWidth*m_winHeight*4);
+	m_pixelBuffer.resize(IMG_RES_X * IMG_RES_Y * 4);
 }
 
 void ViewerWindow::render()
@@ -600,8 +633,8 @@ void ViewerWindow::render()
 
 	if (m_frame == 0)
 	{
-		const qreal retinaScale = devicePixelRatio();
-		glViewport(0, 0, width() * retinaScale, height() * retinaScale);
+		//const qreal retinaScale = devicePixelRatio();
+		glViewport(0, 0, width()/* * retinaScale*/, height()/* * retinaScale*/);
 		glClear(GL_COLOR_BUFFER_BIT);
 	}
 
@@ -664,32 +697,56 @@ void ViewerWindow::render()
 		m_defaultFBO = defaultFramebufferObject();
 		std::cout << "Main FBO Id: " << m_defaultFBO << std::endl;
 
-		int w = m_winWidth;
-		int h = m_winHeight;
+		uint w = IMG_RES_X; //m_winWidth;
+		uint h = IMG_RES_Y; //m_winHeight;
 
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, m_defaultFBO);
-		glReadPixels(0, 0, w, h, GL_RGBA, GL_FLOAT,(GLvoid *) &(m_pixelBuffer[0]));
+
+		// try to fill m_pixelBuffer with fake data and see what gets overwritten and what not.
+		GLint fbo_format, fbo_type;
+		glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &fbo_format);
+		glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &fbo_type);
+		printf("\n color_read_format, %04x", fbo_format);
+		printf("\n color_read_type, %04x", fbo_type);
+		// it seems we are stuck with GL_RGBA and GL_UNSIGNED_BYTE
+
+		glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE/*GL_FLOAT*/,/*(GLvoid *) &(m_pixelBuffer[0])*/m_pixelBuffer.data());
 
 		FIBITMAP* pBitmap;
-		pBitmap = FreeImage_AllocateT(FIT_RGBAF, w, h, /*96*/128);
+		pBitmap = FreeImage_AllocateT(FIT_RGBAF, w, h, 128);
 
 		unsigned int nPitch = FreeImage_GetPitch(pBitmap);
 		std::cout << "Pitch: " << nPitch << std::endl;
+		std::cout << "Output size: " << w  << " x " << h << std::endl;
+		printf("Vector max size = %lu\n", m_pixelBuffer.max_size());
+
 		BYTE *pBits = reinterpret_cast<BYTE*>(FreeImage_GetBits(pBitmap));
 
-		for (int y = 0; y < h; ++y)
+		for (uint y = 0; y < h; y++)
 		{
 			float *pPixel = reinterpret_cast<float*>(pBits);
-			for (int x = 0; x < w; ++x)
+			for (uint x = 0; x < w; x++)
 			{
-				pPixel[0] = m_pixelBuffer[(y*w + x) * 4 + 0];
-				pPixel[1] = m_pixelBuffer[(y*w + x) * 4 + 1];
-				pPixel[2] = m_pixelBuffer[(y*w + x) * 4 + 2];
-				pPixel[3] = m_pixelBuffer[(y*w + x) * 4 + 3];
+				pPixel[0] = m_pixelBuffer[(y*w + x) * 4 + 0] / 255.f; // R
+				pPixel[1] = m_pixelBuffer[(y*w + x) * 4 + 1] / 255.f;  // G
+				pPixel[2] = m_pixelBuffer[(y*w + x) * 4 + 2] / 255.f;  // B
+				pPixel[3] = 255.f; // m_pixelBuffer[(y*w + x) * 3/*4*/ + 3];  // A
+
+//				if ( ((x == 0) && (y == 0)) || ((x == w-1) && (y == h-1)) ) 
+//				{
+//					printf("Index (%d,%d) = %lu\n", x, y, (size_t)(y*w + x) * 4 + 0);
+//					printf("\t Col [%f, %f, %f] \n", pPixel[0], pPixel[1], pPixel[2]);
+//				}
+
+				//if ((y == 0) && (x < 10))
+				//	printf("Col [%f, %f, %f] ", pPixel[0], pPixel[1], pPixel[2]);
+
 				pPixel += /*3*/4;
 			}
 			pBits += nPitch;
 		}
+
+
 		//std::cout << w << " " << h << " / ";
 
 
@@ -715,7 +772,7 @@ void ViewerWindow::render()
 		
 		// Windows FreeImage.dll should use FIF_EXR
 		char buf[512];
-		sprintf(buf, "%s_%04d.exr", m_outPath, 1 + (m_frame % 373));
+		sprintf(buf, "%s_%04d.exr", m_outPath, seq_offset + (m_frame % seq_length));
 		FreeImage_Save(FIF_EXR/*SGI*//*should be an EXR*/, pBitmap, /*m_outPath*/buf, 0);	
 
 		// Free resources
@@ -866,6 +923,8 @@ int main(int argc, char **argv)
 	char* alphaPath = (char*)strAlphaPath.c_str();
 	std::cout << "Alpha Converted: " << alphaPath << std::endl;
 
+	char* maskPath = "\\\\NAS-SYNTHIA\\synthia\\AUDI_AR\\car_videos\\Audi_EV_GmbH\\seq127\\2018-09-20-test_one_character\\masks\\audiCapoMask.png";
+
 #ifndef BASIC_SEQ
 	//diffuse
 	QString qDiffuseMapPath = parser.value(diffuseOpt);
@@ -949,7 +1008,7 @@ int main(int argc, char **argv)
 	} else {
 		/* SINGLE FRAME EXECUTION*/		
 #ifdef BASIC_SEQ
-		ViewerWindow window(backgroundPath, backgroundDepthPath, irpvPath, irpvDepthPath, irPath, alphaPath,			
+		ViewerWindow window(backgroundPath, backgroundDepthPath, irpvPath, irpvDepthPath, irPath, alphaPath, maskPath,
 			outPath, autoClose);
 #else
 		ViewerWindow window(backgroundPath, backgroundDepthPath, irpvPath, irpvDepthPath, irPath, alphaPath, 
@@ -962,7 +1021,9 @@ int main(int argc, char **argv)
 		//window.initialize();
 
 		window.setFormat(format);
-		window.resize(1920, 1080);
+		window.setMaximumWidth(IMG_RES_X);
+		window.setMaximumHeight(IMG_RES_Y);
+		window.resize(IMG_RES_X, IMG_RES_Y);
 		window.show();
 	
 		window.setAnimating(true);
