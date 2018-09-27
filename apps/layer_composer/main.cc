@@ -100,7 +100,7 @@ char * strrep(char *str, char *o_s, char *n_s)
 }
 #endif
 
-static unsigned int seq_length = /*1200*/32;
+static unsigned int seq_length = /*1200*/320/*32*/;
 static unsigned int seq_offset = /*800*/997;
 
 #define BASIC_SEQ // do simple and basic compositing
@@ -396,6 +396,7 @@ void ViewerWindow::loadTexture(const char *filename, int slot, bool verbose)
 		*/
 
 		GLfloat* pixels = (GLfloat*)FreeImage_GetBits(image);
+
 		//char* pixels = (char*)FreeImage_GetBits(tonemapped_image);
 		uchar* pixels_depth = (uchar*)FreeImage_GetBits(image);
 
@@ -745,8 +746,6 @@ void ViewerWindow::render()
 			}
 			pBits += nPitch;
 		}
-
-
 		//std::cout << w << " " << h << " / ";
 
 
@@ -769,7 +768,9 @@ void ViewerWindow::render()
 		//FIBITMAP* imageconv = FreeImage_ConvertFromRawBitsEx(true,(BYTE*) &(pixels[0]), FREE_IMAGE_TYPE::FIT_FLOAT, w, h, w*3*sizeof(float), 96, 0, 0, 0, 0);
 		//FIBITMAP* image = FreeImage_LoadFromMemory(format, hmem, 0);
 		//FIBITMAP* imageconv = FreeImage_ConvertToRGBF(image);
-		
+
+		// bool gamma_app = FreeImage_AdjustGamma(pBitmap, double(2.47f));
+
 		// Windows FreeImage.dll should use FIF_EXR
 		char buf[512];
 		sprintf(buf, "%s_%04d.exr", m_outPath, seq_offset + (m_frame % seq_length));

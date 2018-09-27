@@ -50,6 +50,21 @@ bool is_capo_reflection(vec4 mask)
 		return false;
 }
 
+vec4 clamp(vec4 v, vec4 a, vec4 b)
+{
+	if (v.r < a.r) v.r = a.r;
+	if (v.g < a.g) v.g = a.g;
+	if (v.b < a.b) v.b = a.b;
+	if (v.a < a.a) v.a = a.a;
+	
+	if (v.r > b.r) v.r = b.r;
+	if (v.g > b.g) v.g = b.g;
+	if (v.b > b.b) v.b = b.b;
+	if (v.a > b.a) v.a = b.a;
+	
+	return v;
+}
+
 void main() 
 {
 	//gl_FragColor = vec4(vec2(texc.st),0.0f,1.0f);
@@ -121,13 +136,17 @@ void main()
 	//gl_FragColor = (1.0 - alpha.a)* (background + 0.2*(irpv - ir));
 	
 	if (!noise)
-			gl_FragColor = alpha.a*/*hero*/beauty_hero + (1.0 - alpha.a)*(background + ((is_capo_reflection(mask)) ? (irpv - ir) : 0.2*(irpv - ir)));
+			gl_FragColor = alpha.a*/*hero*/beauty_hero + (1.0 - alpha.a)*(background + ((is_capo_reflection(mask)) ? (irpv - ir) : 0.1*(irpv - ir)));
 		//else
 		//	gl_FragColor = alpha.a * beauty_hero + (1.0 - alpha.a) * (background); //(background/* + (irpv - ir)*/); // we better use hero over black/transparent background so we can use alpha to weight
 	else 
 		gl_FragColor = alpha.a*/*hero*/beauty_hero + (1.0 - alpha.a)*(background);    // testing VZ car+streets screenshots	
 	//gl_FragColor = alpha.x*irpv + (1.0 - alpha.x)*(background + (irpv - ir));    // testing VZ car+streets screenshots
 
+	gl_FragColor.r = 1.0*pow(gl_FragColor.r,2.2);
+	gl_FragColor.g = 1.0*pow(gl_FragColor.g,2.2);
+	gl_FragColor.b = 1.0*pow(gl_FragColor.b,2.2);
+	
 	//if (is_capo_reflection(mask))
 	//	gl_FragColor = vec4(1,0,0,1)*background;
 	//else
