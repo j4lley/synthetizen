@@ -44,11 +44,20 @@ const float thres = 1e-7;
 
 bool is_capo_reflection(vec4 mask)
 {
-	if ((mask.r == 0) && (mask.r == 0) && (mask.r == 0))
+	if ((mask.r == 0) && (mask.g == 0) && (mask.b == 0))
 		return true;
 	else 
 		return false;
 }
+
+bool is_capo_background(vec4 mask)
+{
+	if ((mask.r == 0) && (mask.g > 0) && (mask.b == 0))
+		return true;
+	else 
+		return false;
+}
+
 
 vec4 clamp(vec4 v, vec4 a, vec4 b)
 {
@@ -63,6 +72,14 @@ vec4 clamp(vec4 v, vec4 a, vec4 b)
 	if (v.a > b.a) v.a = b.a;
 	
 	return v;
+}
+
+float luminance(vec4 v)
+{
+	// Luminace = 0.3086 * Red + 0.6094 * Green + 0.0820 * Blue 
+	// Luminace = 0.299 * Red + 0.587 * Green + 0.114 * Blue
+	float lum = 0.299 * v.r + 0.587 * v.g + 0.114 * v.b;
+	return lum;
 }
 
 void main() 
@@ -133,10 +150,8 @@ void main()
 		}
 	}
 
-	//gl_FragColor = (1.0 - alpha.a)* (background + 0.2*(irpv - ir));
-	
-	if (!noise)
-			gl_FragColor = alpha.a*/*hero*/beauty_hero + (1.0 - alpha.a)*(background + ((is_capo_reflection(mask)) ? (irpv - ir) : 0.1*(irpv - ir)));
+	if (!noise)			
+			gl_FragColor = alpha.a*/*hero*/beauty_hero + (1.0 - alpha.a)*(background + ( (is_capo_reflection(mask)) ? (irpv - ir) : (is_capo_background(mask)? 1.0*(irpv - ir) : 0.0) ));
 		//else
 		//	gl_FragColor = alpha.a * beauty_hero + (1.0 - alpha.a) * (background); //(background/* + (irpv - ir)*/); // we better use hero over black/transparent background so we can use alpha to weight
 	else 

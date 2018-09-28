@@ -100,8 +100,8 @@ char * strrep(char *str, char *o_s, char *n_s)
 }
 #endif
 
-static unsigned int seq_length = /*1200*/320/*32*/;
-static unsigned int seq_offset = /*800*/997;
+static unsigned int seq_length = 1200/*320*//*32*/;
+static unsigned int seq_offset = /*60*//*800*/997;
 
 #define BASIC_SEQ // do simple and basic compositing
 
@@ -198,7 +198,7 @@ ViewerWindow::ViewerWindow()
 	m_irpvPath = "../../../resources/images/0000_irpv.png";
 	m_irPath = "../../../resources/images/0000_ir.png";
 	m_alphaPath = "../../../resources/images/0000_alpha.png";
-	m_maskPath = "\\\\NAS-SYNTHIA\\synthia\\AUDI_AR\\car_videos\\Audi_EV_GmbH\\seq127\\2018-09-20-test_one_character\\masks\\audiCapoMask.png";
+	m_maskPath = "\\\\NAS-SYNTHIA\\synthia\\AUDI_AR\\car_videos\\Audi_EV_GmbH\\seq127\\2018-09-28-test\\masks\\audiCapoMask_green.png";
 	m_outPath = "../../../resources/output/0000_output.exr";
 	// DO NOT PLEASE EVER CHANGE THIS TO AN ABSOLUTE PATH !!!
 }
@@ -537,22 +537,22 @@ void ViewerWindow::updateFrameTextures()
 	loadTexture(/*m_backgroundPath*/buf, 0);
 	//std::cout << "Loading Bg_depth" << std::endl;	
 	//loadTexture(m_backgroundDepthPath, 1);
-	sprintf(buf, "%s\\%s\\%s\\%s\\beauty_%04d.exr", data_str, "2018-09-20-test_one_character\\layers","street_hero","beauty", seq_offset + (m_frame % seq_length));
+	sprintf(buf, "%s\\%s\\%s\\%s\\Beauty_%04d.exr", data_str, "2018-09-28-test\\layers","street_hero","beauty", seq_offset + (m_frame % seq_length));
 	std::cout << "Loading irpv" << buf << std::endl;
 	loadTexture(/*m_irpvPath*/buf, 2);
 	//std::cout << "Loading irpv_depth" << std::endl;
 	//sprintf(buf, "%s\\%s\\%s\\depth_%04d.exr", data_str, "street_car", "depth", 1700 + (m_frame % 21));
 	//loadTexture(/*m_irpvDepthPath*/buf, 3);
 	
-	sprintf(buf, "%s\\%s\\%s\\%s\\beauty_%04d.exr", data_str, "2018-09-20-test_one_character\\layers", "street", "beauty", seq_offset + (m_frame % seq_length));
+	sprintf(buf, "%s\\%s\\%s\\%s\\Beauty_%04d.exr", data_str, "2018-09-28-test\\layers", "street", "beauty", seq_offset + (m_frame % seq_length));
 	std::cout << "Loading ir" << buf << std::endl;
 	loadTexture(/*m_irPath*/buf, 4);
 	
-	sprintf(buf, "%s\\%s\\%s\\%s\\opacity_%04d.png", data_str, "2018-09-20-test_one_character\\layers", "hero", "opacity", seq_offset + (m_frame % seq_length));
+	sprintf(buf, "%s\\%s\\%s\\%s\\Opacity_%04d.png", data_str, "2018-09-28-test\\layers", "hero", "opacity", seq_offset + (m_frame % seq_length));
 	std::cout << "Loading Alpha: " << buf << std::endl;
 	loadTexture(/*m_alphaPath*/buf, 5);
 	
-	sprintf(buf, "%s\\%s\\%s\\%s\\beauty_%04d.exr", data_str, "2018-09-20-test_one_character\\layers", "hero", "beauty", seq_offset + (m_frame % seq_length));
+	sprintf(buf, "%s\\%s\\%s\\%s\\Beauty_%04d.exr", data_str, "2018-09-28-test\\layers", "hero", "beauty", seq_offset + (m_frame % seq_length));
 	std::cout << "Loading Hero Beauty: " << buf << std::endl;
 	loadTexture(/*m_alphaPath*/buf, 6);
 
@@ -924,7 +924,7 @@ int main(int argc, char **argv)
 	char* alphaPath = (char*)strAlphaPath.c_str();
 	std::cout << "Alpha Converted: " << alphaPath << std::endl;
 
-	char* maskPath = "\\\\NAS-SYNTHIA\\synthia\\AUDI_AR\\car_videos\\Audi_EV_GmbH\\seq127\\2018-09-20-test_one_character\\masks\\audiCapoMask.png";
+	char* maskPath = "\\\\NAS-SYNTHIA\\synthia\\AUDI_AR\\car_videos\\Audi_EV_GmbH\\seq127\\2018-09-28-test\\layers\\masks\\audiCapoMask_green.png";
 
 #ifndef BASIC_SEQ
 	//diffuse
