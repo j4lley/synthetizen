@@ -82,6 +82,15 @@ float luminance(vec4 v)
 	return lum;
 }
 
+vec4 apply_gamma(vec4 input_color, float gamma)
+{
+	vec4 output_color;
+	output_color.r = 1.0*pow(input_color.r,gamma);
+	output_color.g = 1.0*pow(input_color.g,gamma);
+	output_color.b = 1.0*pow(input_color.b,gamma);
+	return output_color;
+}
+
 void main() 
 {
 	//gl_FragColor = vec4(vec2(texc.st),0.0f,1.0f);
@@ -92,11 +101,11 @@ void main()
 	
 	vec4 background = texture2D(tex_background, texc.st);
 	//vec4 background_depth = texture2D(tex_background_depth, texc.st) /*float((1 << 16) - 1)*/; // normalize using maximum representable value using 32 bits;   
-	vec4 irpv = texture2D(tex_irpv, texc.st);
+	vec4 irpv = apply_gamma(texture2D(tex_irpv, texc.st), 1/4.2f);
 	//vec4 irpv_depth = texture2D(tex_irpv_depth, texc.st)/* / float((1 << 32) - 1)*/;
-	vec4 ir = texture2D(tex_ir, texc.st);
+	vec4 ir = apply_gamma(texture2D(tex_ir, texc.st), 1/4.2f);
 	vec4 /*float*/ alpha = texture2D(tex_alpha, texc.st);	
-	vec4 beauty_hero = texture2D(tex_beauty_hero, texc.st);	
+	vec4 beauty_hero = apply_gamma(texture2D(tex_beauty_hero, texc.st), 1/4.2f);	
 	vec4 mask = texture2D(tex_mask, texc.st);
 	//vec4 diffuse_hero = texture2D(tex_diffuse_hero, texc.st);	
 	//vec4 diffuse_direct_hero = texture2D(tex_diffuse_direct_hero, texc.st);	
@@ -158,12 +167,14 @@ void main()
 		gl_FragColor = alpha.a*/*hero*/beauty_hero + (1.0 - alpha.a)*(background);    // testing VZ car+streets screenshots	
 	//gl_FragColor = alpha.x*irpv + (1.0 - alpha.x)*(background + (irpv - ir));    // testing VZ car+streets screenshots
 
-	gl_FragColor.r = 1.0*pow(gl_FragColor.r,2.2);
-	gl_FragColor.g = 1.0*pow(gl_FragColor.g,2.2);
-	gl_FragColor.b = 1.0*pow(gl_FragColor.b,2.2);
+	//gl_FragColor = background; // skip
 	
-	//if (is_capo_reflection(mask))
-	//	gl_FragColor = vec4(1,0,0,1)*background;
+	//gl_FragColor.r = 1.0*pow(gl_FragColor.r,/*0.4545*/2.2);
+	//gl_FragColor.g = 1.0*pow(gl_FragColor.g,/*0.4545*/2.2);
+	//gl_FragColor.b = 1.0*pow(gl_FragColor.b,/*0.4545*/2.2);
+	
+	//if (is_capo_background(mask))
+	//	gl_FragColor = vec4(0,1,0,1)*background;
 	//else
 	//	gl_FragColor = background;
 

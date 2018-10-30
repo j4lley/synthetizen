@@ -100,8 +100,9 @@ char * strrep(char *str, char *o_s, char *n_s)
 }
 #endif
 
-static unsigned int seq_length = 1200/*320*//*32*/;
-static unsigned int seq_offset = /*60*//*800*/997;
+static unsigned int seq_length = 700/*1678*//*1700*//*320*//*32*/;
+static unsigned int seq_offset = 650;//600+192/*997*/;
+static unsigned int seq_start_hero = 600;
 
 #define BASIC_SEQ // do simple and basic compositing
 
@@ -115,13 +116,15 @@ class ViewerWindow : public OpenGLWindow
 {
 public:
 	ViewerWindow();
-	ViewerWindow(char* backgroundPath, 
+	ViewerWindow(QString rootDataFolderPath, 
+				 QString virtualDataFolder,
+				 char* backgroundPath, 
 				 char* backgroundDepthPath, 
 				 char* irpvPath,  
 				 char* irpvDepthPath, 
 				 char* irPath, 
 				 char* alphaPath, 
-				 char* maskPath,
+				 QString maskPath,
 #ifndef BASIC_SEQ
 				 char* diffuseMapPath,
 				 char* diffuseDirectMapPath,
@@ -151,6 +154,8 @@ private:
 	GLuint m_texcAttr;
 	GLuint m_matrixUniform;
 
+	QString m_rootDataFolder;
+	QString m_virtualDataFolder;
 	char* m_backgroundPath;
 	char* m_backgroundDepthPath;
 	char* m_irpvPath;
@@ -158,7 +163,7 @@ private:
 	char* m_irPath;
 	char* m_alphaPath;
 	char* m_beautyHeroPath;
-	char* m_maskPath;
+	QString m_maskPath;
 
 	char* m_diffuseMapPath;
 	char* m_diffuseDirectMapPath;
@@ -198,20 +203,23 @@ ViewerWindow::ViewerWindow()
 	m_irpvPath = "../../../resources/images/0000_irpv.png";
 	m_irPath = "../../../resources/images/0000_ir.png";
 	m_alphaPath = "../../../resources/images/0000_alpha.png";
-	m_maskPath = "\\\\NAS-SYNTHIA\\synthia\\AUDI_AR\\car_videos\\Audi_EV_GmbH\\seq127\\2018-09-28-test\\masks\\audiCapoMask_green.png";
+	//m_maskPath = "\\\\NAS-SYNTHIA\\synthia\\AUDI_AR\\car_videos\\Audi_EV_GmbH\\seq127\\2018-10-28_femaleWCElectric\\layers\masks\\audiCapoMask_green.png";
 	m_outPath = "../../../resources/output/0000_output.exr";
 	// DO NOT PLEASE EVER CHANGE THIS TO AN ABSOLUTE PATH !!!
 }
 
 
 ViewerWindow::ViewerWindow
-	(char* backgroundPath,
+	(
+	QString rootDataFolderPath, 
+	QString virtualDataFolder,
+	char* backgroundPath,
 	char* backgroundDepthPath,
 	char* irpvPath,
 	char* irpvDepthPath,
 	char* irPath,
 	char* alphaPath,
-	char* maskPath,
+	QString maskPath,
 #ifndef BASIC_SEQ
 	char* diffuseMapPath,
 	char* diffuseDirectMapPath,
@@ -231,6 +239,8 @@ ViewerWindow::ViewerWindow
 	m_saved = false;
 	m_epsilon = 0.001;
 
+	m_rootDataFolder = rootDataFolderPath;
+	m_virtualDataFolder = virtualDataFolder;
 	m_backgroundPath = backgroundPath;
 	m_backgroundDepthPath = backgroundDepthPath;
 	m_irpvPath = irpvPath;
@@ -457,6 +467,7 @@ void ViewerWindow::loadTexture(const char *filename, int slot, bool verbose)
 			std::cout << "::> max depth = " << max_depth << std::endl;
 		}
 		m_texture[slot]->setData(pxformat, pxtype, (GLvoid*) (bpp != 32) ? texture : depth);
+		delete(texture);
 	}
 
 	m_program->bind();
@@ -496,10 +507,9 @@ void ViewerWindow::loadAllTextures()
 	std::cout << "Loading ir (Street)" << std::endl;
 	loadTexture(m_irPath, 4);
 	std::cout << "Loading Alpha Hero" << std::endl;
-	loadTexture(m_alphaPath, 5);
-	
+	loadTexture(m_alphaPath, 5);	
 	std::cout << "Loading Mask" << std::endl;
-	loadTexture(m_maskPath, 7);
+	loadTexture(m_maskPath.toStdString().c_str(), 7);
 #ifndef BASIC_SEQ
 	std::cout << "Loading (Street+Hero) diffuse" << std::endl;
 	loadTexture(m_diffuseMapPath, 6);
@@ -530,34 +540,40 @@ void ViewerWindow::updateFrameTextures()
 	//char* data_str = "D:\\workspace\\adas\\unity\\octane\\temp\\rendersFran3\\test_sequence";
 	//char* data_str = "D:\\workspace\\adas\\audi\\audi127_test1";
 	//char* data_str = "D:\\workspace\\adas\\audi\\audi_seq127";
-	char* data_str = "\\\\NAS-SYNTHIA\\synthia\\AUDI_AR\\car_videos\\Audi_EV_GmbH\\seq127";
+	const char* data_str = m_rootDataFolder.toStdString().c_str(); //"\\\\NAS-SYNTHIA\\synthia\\AUDI_AR\\car_videos\\Audi_EV_GmbH\\seq127";
 	
-	sprintf(buf, "%s\\%s\\%09d.png", data_str, "png", 12700 + seq_offset + (m_frame % seq_length));
+	sprintf(buf, "%s\\%s\\%09d.png", /*data_str*/m_rootDataFolder.toStdString().c_str(), "png", 12700 + seq_offset + (m_frame % seq_length));
 	std::cout << "\n\n Updating Bg" << buf << std::endl;
+
+	if (m_frame > 2) {
+		delete(m_texture[0]); delete(m_texture[2]); delete(m_texture[4]); delete(m_texture[5]); delete(m_texture[6]); delete(m_texture[7]);
+	}
 	loadTexture(/*m_backgroundPath*/buf, 0);
 	//std::cout << "Loading Bg_depth" << std::endl;	
 	//loadTexture(m_backgroundDepthPath, 1);
-	sprintf(buf, "%s\\%s\\%s\\%s\\Beauty_%04d.exr", data_str, "2018-09-28-test\\layers","street_hero","beauty", seq_offset + (m_frame % seq_length));
+	sprintf(buf, "%s\\%s\\%s\\%s\\octane_pass0_spp128_fr%04d.exr", m_virtualDataFolder.toStdString().c_str(), "layers","street_hero","Beauty", (seq_offset - seq_start_hero + 2) + (m_frame % seq_length));
 	std::cout << "Loading irpv" << buf << std::endl;
+	
 	loadTexture(/*m_irpvPath*/buf, 2);
 	//std::cout << "Loading irpv_depth" << std::endl;
 	//sprintf(buf, "%s\\%s\\%s\\depth_%04d.exr", data_str, "street_car", "depth", 1700 + (m_frame % 21));
 	//loadTexture(/*m_irpvDepthPath*/buf, 3);
 	
-	sprintf(buf, "%s\\%s\\%s\\%s\\Beauty_%04d.exr", data_str, "2018-09-28-test\\layers", "street", "beauty", seq_offset + (m_frame % seq_length));
+	sprintf(buf, "%s\\%s\\%s\\%s\\octane_pass0_spp128_fr%04d.exr", m_virtualDataFolder.toStdString().c_str(), "layers", "street", "Beauty", /*(seq_offset - seq_start_hero) + (m_frame % seq_length)*/0001);
 	std::cout << "Loading ir" << buf << std::endl;
 	loadTexture(/*m_irPath*/buf, 4);
 	
-	sprintf(buf, "%s\\%s\\%s\\%s\\Opacity_%04d.png", data_str, "2018-09-28-test\\layers", "hero", "opacity", seq_offset + (m_frame % seq_length));
+	sprintf(buf, "%s\\%s\\%s\\%s\\octane_pass1_spp128_fr%04d.png", m_virtualDataFolder.toStdString().c_str(), "layers", "hero", "Opacity", (seq_offset - seq_start_hero + 2) + (m_frame % seq_length));
 	std::cout << "Loading Alpha: " << buf << std::endl;
 	loadTexture(/*m_alphaPath*/buf, 5);
 	
-	sprintf(buf, "%s\\%s\\%s\\%s\\Beauty_%04d.exr", data_str, "2018-09-28-test\\layers", "hero", "beauty", seq_offset + (m_frame % seq_length));
+	sprintf(buf, "%s\\%s\\%s\\%s\\octane_pass0_spp128_fr%04d.exr", m_virtualDataFolder.toStdString().c_str(), "layers", "hero", "Beauty", (seq_offset - seq_start_hero + 2) + (m_frame % seq_length));
 	std::cout << "Loading Hero Beauty: " << buf << std::endl;
 	loadTexture(/*m_alphaPath*/buf, 6);
 
-	std::cout << "Loading Mask " << m_maskPath << std::endl;
-	loadTexture(m_maskPath, 7);
+	//m_maskPath = "\\\\NAS-SYNTHIA\\synthia\\AUDI_AR\\car_videos\\Audi_EV_GmbH\\seq127\\2018-10-28_femaleWCElectric\\layers\\masks\\audiCapoMask_green.png";
+	std::cout << "Loading Mask " << m_maskPath.toStdString() << std::endl;
+	loadTexture(m_maskPath.toStdString().c_str(), 7);
 #if 0
 	//std::cout << "Loading (Street+Hero) diffuse" << std::endl;
 	sprintf(buf, "%s\\%s\\%s\\%s\\%04d.exr", data_str, "street_car", "diffuse","all", 1700 + (m_frame % 21));
@@ -774,7 +790,7 @@ void ViewerWindow::render()
 		// Windows FreeImage.dll should use FIF_EXR
 		char buf[512];
 		sprintf(buf, "%s_%04d.exr", m_outPath, seq_offset + (m_frame % seq_length));
-		FreeImage_Save(FIF_EXR/*SGI*//*should be an EXR*/, pBitmap, /*m_outPath*/buf, 0);	
+		FreeImage_Save(FIF_EXR/*SGI*//*should be an EXR*/, pBitmap, /*m_outPath*/buf, 0);
 
 		// Free resources
 		FreeImage_Unload(pBitmap);
@@ -800,6 +816,16 @@ int main(int argc, char **argv)
 
 	QCommandLineOption autoCloseOption("ac", QCoreApplication::translate("main", "Auto-close after render and save"));
 	parser.addOption(autoCloseOption);
+
+	QCommandLineOption rootDataOpt("data_folder",
+		QCoreApplication::translate("main", "Root data folder"),
+		QCoreApplication::translate("main", "directory"));
+	parser.addOption(rootDataOpt);
+
+	QCommandLineOption virtualDataOpt("virtual_data_folder",
+		QCoreApplication::translate("main", "Virtual data folder"),
+		QCoreApplication::translate("main", "directory"));
+	parser.addOption(virtualDataOpt);
 
 	QCommandLineOption backgroundOpt("bg",
 		QCoreApplication::translate("main", "Background of the composition"),
@@ -833,7 +859,11 @@ int main(int argc, char **argv)
 		QCoreApplication::translate("main", "Alpha map of the composition"),
 		QCoreApplication::translate("main", "directory"));
 	parser.addOption(alphaOpt);
-	//std::cout << "Alpha Read" << std::endl;
+
+	QCommandLineOption maskOpt("mask",
+		QCoreApplication::translate("main", "Mask of foreground object to use during composition"),
+		QCoreApplication::translate("main", "directory"));
+	parser.addOption(maskOpt);
 
 #ifndef BASIC_SEQ
 	QCommandLineOption diffuseOpt("diff_map",
@@ -894,37 +924,34 @@ int main(int argc, char **argv)
 
 	bool autoClose = parser.isSet(autoCloseOption);
 
+	QString qRootDataPath = parser.value(rootDataOpt);
+	std::cout << "Root Data Folder: " << qRootDataPath.toStdString() << std::endl;
+
+	QString qVirtualDataPath = parser.value(virtualDataOpt);
+	std::cout << "Virtual Data Folder: " << qVirtualDataPath.toStdString() << std::endl;
+
 	QString qBackgroundPath = parser.value(backgroundOpt);
-	std::string strBackgroundPath = qBackgroundPath.toUtf8().constData();
-	char* backgroundPath = (char*)strBackgroundPath.c_str();
-	std::cout << "BG Converted: " << backgroundPath << std::endl;
+	std::cout << "BG Converted: " << qBackgroundPath.toStdString() << std::endl;
 
 	QString qBackgroundDepthPath = parser.value(backgroundDepthOpt);
-	std::string strBackgroundDepthPath = qBackgroundDepthPath.toUtf8().constData();
-	char* backgroundDepthPath = (char*)strBackgroundDepthPath.c_str();
-	std::cout << "BG_depth Converted: " << backgroundDepthPath << std::endl;
+	std::cout << "BG_depth Converted: " << qBackgroundDepthPath.toStdString() << std::endl;
 
 	QString qIrpvPath = parser.value(irpvOpt);
-	std::string strIrpvPath = qIrpvPath.toUtf8().constData();
-	char* irpvPath = (char*)strIrpvPath.c_str();
-	std::cout << "Irpv Converted: " << irpvPath << std::endl;
+	std::cout << "Irpv Converted: " << qIrpvPath.toStdString() << std::endl;
 
 	QString qIrpvDepthPath = parser.value(irpvDepthOpt);
-	std::string strIrpvDepthPath = qIrpvDepthPath.toUtf8().constData();
-	char* irpvDepthPath = (char*)strIrpvDepthPath.c_str();
-	std::cout << "Irpv_depth Converted: " << irpvDepthPath << std::endl;
+	std::cout << "Irpv_depth Converted: " << qIrpvDepthPath.toStdString() << std::endl;
 
 	QString qIrPath = parser.value(irOpt);
-	std::string strIrPath = qIrPath.toUtf8().constData();
-	char* irPath = (char*)strIrPath.c_str();
-	std::cout << "Ir Converted: " << irPath << std::endl;
+	std::cout << "Ir Converted: " << qIrPath.toStdString() << std::endl;
 
 	QString qAlphaPath = parser.value(alphaOpt);
-	std::string strAlphaPath = qAlphaPath.toUtf8().constData();
-	char* alphaPath = (char*)strAlphaPath.c_str();
-	std::cout << "Alpha Converted: " << alphaPath << std::endl;
+	std::cout << "Alpha Converted: " << qAlphaPath.toStdString() << std::endl;
 
-	char* maskPath = "\\\\NAS-SYNTHIA\\synthia\\AUDI_AR\\car_videos\\Audi_EV_GmbH\\seq127\\2018-09-28-test\\layers\\masks\\audiCapoMask_green.png";
+	QString qMaskPath = parser.value(maskOpt);
+	std::cout << "Mask Converted: " << qMaskPath.toStdString() << std::endl;
+
+	//char* maskPath = "\\\\NAS-SYNTHIA\\synthia\\AUDI_AR\\car_videos\\Audi_EV_GmbH\\seq127\\2018-10-28_femaleWCElectric\\layers\\masks\\audiCapoMask_green.png";
 
 #ifndef BASIC_SEQ
 	//diffuse
@@ -983,13 +1010,15 @@ int main(int argc, char **argv)
 	QSurfaceFormat format;
 	format.setSamples(16);
 
-	std::cout << "Creating composition with paths: " << std::endl 
-		<< backgroundPath << std::endl
-		<< backgroundDepthPath << std::endl
-		<< irpvPath << std::endl 
-		<< irpvDepthPath << std::endl
-		<< irPath << std::endl 
-		<< alphaPath << std::endl
+	std::cout << "Creating composition with paths: " << std::endl
+		<< qRootDataPath.toStdString() << std::endl
+		<< qBackgroundPath.toStdString() << std::endl
+		<< qBackgroundDepthPath.toStdString() << std::endl
+		<< qIrpvPath.toStdString() << std::endl 
+		<< qIrpvDepthPath.toStdString() << std::endl
+		<< qIrPath.toStdString() << std::endl
+		<< qAlphaPath.toStdString() << std::endl
+		<< qMaskPath.toStdString() << std::endl
 #ifndef BASIC_SEQ
 		<< diffusePath << std::endl
 		<< diffuseDirectPath << std::endl
@@ -1003,14 +1032,24 @@ int main(int argc, char **argv)
 #endif
 		<< outPath << std::endl;
 
-	if (strBackgroundPath.empty() || strIrpvPath.empty() || strIrPath.empty() || strAlphaPath.empty())
+	/*if (qBackgroundPath.toStdString().empty() || qIrpvPath.toStdString().empty() || qIrPath.toStdString().empty() || qAlphaPath.toStdString().empty())
 	{
 		std::cout << "One or more image paths are missing." << std::endl << "Exiting application." << std::endl;
-	} else {
+	} else*/ {
 		/* SINGLE FRAME EXECUTION*/		
 #ifdef BASIC_SEQ
-		ViewerWindow window(backgroundPath, backgroundDepthPath, irpvPath, irpvDepthPath, irPath, alphaPath, maskPath,
-			outPath, autoClose);
+		ViewerWindow window(
+			qRootDataPath,
+			qVirtualDataPath,
+			(char*) qBackgroundPath.toStdString().c_str(), 
+			(char*) qBackgroundDepthPath.toStdString().c_str(),
+			(char*) qIrpvPath.toStdString().c_str(),
+			(char*) qIrpvDepthPath.toStdString().c_str(),
+			(char*) qIrPath.toStdString().c_str(),
+			(char*) qAlphaPath.toStdString().c_str(),					
+			qMaskPath, // "\\\\NAS-SYNTHIA\\synthia\\AUDI_AR\\car_videos\\Audi_EV_GmbH\\seq127\\2018-10-28_femaleWCElectric\\layers\\masks\\audiCapoMask_green.png",
+			(char*) outPath,
+			(char*) autoClose);
 #else
 		ViewerWindow window(backgroundPath, backgroundDepthPath, irpvPath, irpvDepthPath, irPath, alphaPath, 
 						    diffusePath, diffuseDirectPath, diffuseIndirectPath, diffuseFilterPath,
